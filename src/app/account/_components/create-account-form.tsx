@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Contact } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -64,3 +64,9 @@ export default function CreateAccountForm() {
           </AlertDescription>
         </Alert>
       </CardContent>
+      <CardFooter>
+        <SubmitButton />
+      </CardFooter>
+    </form>
+  );
+}
