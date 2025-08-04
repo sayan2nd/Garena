@@ -4,7 +4,7 @@ import FaqChatbot from '@/components/faq-chatbot';
 
 export default function Home() {
   const products = Array.from({ length: 12 }, (_, i) => ({
-    id: i + 1,
+    id: `item-${i + 1}`,
     name: `Game Item Pack ${i + 1}`,
     price: (i + 1) * 20,
     imageUrl: 'https://placehold.co/600x400.png',
@@ -23,10 +23,7 @@ export default function Home() {
             {products.map((product) => (
               <ProductCard
                 key={product.id}
-                name={product.name}
-                price={product.price}
-                imageUrl={product.imageUrl}
-                dataAiHint={product.dataAiHint}
+                product={product}
               />
             ))}
           </div>

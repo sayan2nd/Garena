@@ -6,11 +6,11 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { type User } from '@/lib/definitions';
+import { type User, type Order, type Product } from '@/lib/definitions';
 import { randomBytes } from 'crypto';
 
-const SECRET_KEY = process.env.JWT_SECRET_KEY || new TextEncoder().encode('your-super-secret-jwt-key-that-is-at-least-32-bytes-long');
-const key = typeof SECRET_KEY === 'string' ? new TextEncoder().encode(SECRET_KEY) : SECRET_KEY;
+const SECRET_KEY = process.env.JWT_SECRET_KEY || 'your-super-secret-jwt-key-that-is-at-least-32-bytes-long';
+const key = new TextEncoder().encode(SECRET_KEY);
 
 export async function askQuestion(
   input: CustomerFAQChatbotInput
@@ -24,15 +24,42 @@ export async function askQuestion(
   }
 }
 
+type FormState = {
+  success: boolean;
+  message: string;
+};
+
+// --- User Identification ---
+export async function getUserId(): Promise<string | null> {
+    const userIdCookie = cookies().get('user_id')?.value;
+    if (userIdCookie) {
+        return userIdCookie;
+    }
+    return null;
+}
+
+export async function ensureUserId(): Promise<string> {
+    let userId = await getUserId();
+    if (!userId) {
+        userId = randomBytes(16).toString('hex');
+        cookies().set('user_id', userId, {
+            maxAge: 365 * 24 * 60 * 60, // 1 year
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+        });
+    }
+    return userId;
+}
+
+
+// --- Authentication Actions ---
+
 const accountSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters long'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
 });
 
-type FormState = {
-  success: boolean;
-  message: string;
-};
 
 async function createSession(username: string) {
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -228,6 +255,8 @@ export async function changeUsername(prevState: FormState, formData: FormData): 
     }
 }
 
+// --- Referral Actions ---
+
 export async function generateReferralLink(): Promise<{ success: boolean; link?: string; message: string }> {
     const session = await getSession();
     if (!session?.username) {
@@ -242,11 +271,7 @@ export async function generateReferralLink(): Promise<{ success: boolean; link?:
             return { success: false, message: 'User not found.' };
         }
         
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-        if (!baseUrl) {
-            console.error('NEXT_PUBLIC_BASE_URL is not set. Please add it to your .env file.');
-            return { success: false, message: 'Could not generate link. Site configuration is missing.' };
-        }
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
 
         if (user.referralCode) {
             const link = `${baseUrl}/?ref=${user.referralCode}`;
@@ -265,5 +290,125 @@ export async function generateReferralLink(): Promise<{ success: boolean; link?:
     } catch (error) {
         console.error(error);
         return { success: false, message: 'An unexpected error occurred.' };
+    }
+}
+
+// --- Order Actions ---
+
+const createOrderSchema = z.object({
+    gamingId: z.string().min(1, 'Gaming ID is required'),
+    productId: z.string(),
+    productName: z.string(),
+    productPrice: z.number(),
+    productImageUrl: z.string().url(),
+});
+
+export async function createUpiOrder(product: Product, gamingId: string): Promise<{ success: boolean; orderId?: string; message: string }> {
+    const validatedData = createOrderSchema.safeParse({ ...product, gamingId });
+    if (!validatedData.success) {
+        return { success: false, message: 'Invalid order data.' };
+    }
+
+    const userId = await ensureUserId();
+    const referralCode = cookies().get('referral_code')?.value;
+
+    const newOrder: Omit<Order, '_id'> = {
+        userId,
+        gamingId: validatedData.data.gamingId,
+        productId: validatedData.data.productId,
+        productName: validatedData.data.productName,
+        productPrice: validatedData.data.productPrice,
+        productImageUrl: validatedData.data.productImageUrl,
+        paymentMethod: 'UPI',
+        status: 'Pending UTR',
+        referralCode: referralCode,
+        createdAt: new Date(),
+    };
+
+    try {
+        const db = await connectToDatabase();
+        const result = await db.collection<Omit<Order, '_id'>>('orders').insertOne(newOrder);
+        return { success: true, orderId: result.insertedId.toString(), message: 'Order created.' };
+    } catch (error) {
+        console.error('Error creating UPI order:', error);
+        return { success: false, message: 'Failed to create order.' };
+    }
+}
+
+
+const redeemCodeSchema = z.object({
+  gamingId: z.string().min(1, 'Gaming ID is required'),
+  productId: z.string(),
+  redeemCode: z.string().min(1, 'Redeem code is required'),
+});
+
+export async function createRedeemCodeOrder(
+  product: Product,
+  gamingId: string,
+  redeemCode: string
+): Promise<{ success: boolean; message: string }> {
+    const validatedData = redeemCodeSchema.safeParse({ gamingId, productId: product.id, redeemCode });
+    if (!validatedData.success) {
+        return { success: false, message: 'Invalid data provided.' };
+    }
+    
+    // In a real app, you would validate the redeem code here.
+    // For this example, we'll assume any code is valid.
+
+    const userId = await ensureUserId();
+    const referralCode = cookies().get('referral_code')?.value;
+
+    const newOrder: Omit<Order, '_id'> = {
+        userId,
+        gamingId: validatedData.data.gamingId,
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price,
+        productImageUrl: product.imageUrl,
+        paymentMethod: 'Redeem Code',
+        status: 'Processing',
+        redeemCode: validatedData.data.redeemCode,
+        referralCode: referralCode,
+        createdAt: new Date(),
+    };
+
+    try {
+        const db = await connectToDatabase();
+        await db.collection('orders').insertOne(newOrder);
+        return { success: true, message: 'Order is processing.' };
+    } catch (error) {
+        console.error('Error creating redeem code order:', error);
+        return { success: false, message: 'Failed to create order.' };
+    }
+}
+
+const submitUtrSchema = z.object({
+    orderId: z.string(),
+    utr: z.string().min(6, 'UTR must be at least 6 characters'),
+});
+
+export async function submitUtr(orderId: string, utr: string): Promise<{ success: boolean; message: string }> {
+    const validatedData = submitUtrSchema.safeParse({ orderId, utr });
+    if (!validatedData.success) {
+        return { success: false, message: 'Invalid UTR data.' };
+    }
+
+    const { ObjectId } = await import('mongodb');
+
+    try {
+        const db = await connectToDatabase();
+        const result = await db.collection('orders').updateOne(
+            { _id: new ObjectId(orderId) },
+            { $set: { utr: validatedData.data.utr, status: 'Processing' } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return { success: false, message: 'Order not found or already updated.' };
+        }
+
+        return { success: true, message: 'UTR submitted successfully.' };
+    } catch (error) {
+        console.error('Error submitting UTR:', error);
+        return { success: false, message: 'Failed to submit UTR.' };
     }
 }
