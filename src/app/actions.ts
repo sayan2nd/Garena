@@ -408,7 +408,7 @@ type AdminFormState = {
   success: boolean;
 };
 
-export async function verifyAdminPassword(prevState: AdminFormState, formData: FormData): Promise<FormState> {
+export async function verifyAdminPassword(prevState: FormState, formData: FormData): Promise<FormState> {
   noStore();
   const password = formData.get('password') as string;
   const adminPassword = process.env.ADMIN_PASSWORD;
@@ -785,5 +785,39 @@ export async function vanishProduct(productId: string): Promise<{ success: boole
 
     revalidatePath('/');
     revalidatePath('/admin/price-management');
+    revalidatePath('/admin/vanished-products');
     return { success: true, message: 'Product vanished.' };
+}
+
+export async function getVanishedProducts() {
+    noStore();
+    const db = await connectToDatabase();
+    const productsFromDb = await db.collection('products')
+      .find({ isVanished: true })
+      .sort({ price: 1 })
+      .toArray();
+
+    return productsFromDb.map((p: any) => ({
+        ...p,
+        _id: p._id.toString(),
+    }));
+}
+
+export async function restoreProduct(productId: string): Promise<{ success: boolean; message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+
+    const { ObjectId } = await import('mongodb');
+    const db = await connectToDatabase();
+    await db.collection('products').updateOne(
+        { _id: new ObjectId(productId) },
+        { $set: { isVanished: false } }
+    );
+
+    revalidatePath('/');
+    revalidatePath('/admin/price-management');
+    revalidatePath('/admin/vanished-products');
+    return { success: true, message: 'Product restored.' };
 }

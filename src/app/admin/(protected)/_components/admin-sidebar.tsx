@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { logoutAdmin } from '@/app/actions';
-import { Home, ListChecks, ListX, Users, LogOut, Flame, Banknote, Tag } from 'lucide-react';
+import { Home, ListChecks, ListX, Users, LogOut, Flame, Banknote, Tag, ArchiveRestore } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { href: '/admin/accounts', label: 'User Accounts', icon: Users },
   { href: '/admin/withdrawals', label: 'Withdrawals', icon: Banknote },
   { href: '/admin/price-management', label: 'Price Management', icon: Tag },
+  { href: '/admin/vanished-products', label: 'Vanished Products', icon: ArchiveRestore },
 ];
 
 export default function AdminSidebar() {
