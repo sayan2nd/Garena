@@ -118,7 +118,7 @@ export function OrderList({ initialOrders, status, title, showActions = false, i
                                             }>{order.status}</Badge>
                                         </div>
                                         <CardDescription>
-                                            Order Date: {new Date(order.createdAt).toLocaleString()}
+                                            Order Date: {order.createdAt}
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>

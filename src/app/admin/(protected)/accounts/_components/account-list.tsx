@@ -104,7 +104,7 @@ export default function AccountList({ initialUsers, initialHasMore }: AccountLis
                                     <CardHeader>
                                         <CardTitle className="text-base">{user.username}</CardTitle>
                                         <CardDescription>
-                                            Created: {new Date(user.createdAt).toLocaleString()}
+                                            Created: {user.createdAt}
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>

@@ -406,7 +406,8 @@ type AdminFormState = {
   success: boolean;
 };
 
-export async function verifyAdminPassword(prevState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+export async function verifyAdminPassword(prevState: AdminFormState, formData: FormData): Promise<FormState> {
+  noStore();
   const password = formData.get('password') as string;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -420,7 +421,7 @@ export async function verifyAdminPassword(prevState: AdminFormState, formData: F
   if (isValid) {
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     cookies().set('admin_session', 'true', { expires, httpOnly: true, sameSite: 'strict', path: '/' });
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout');
     redirect('/admin');
   } else {
     return { message: 'Incorrect password.', success: false };
@@ -495,7 +496,7 @@ export async function getOrdersForAdmin(
   const orders = ordersFromDb.map((order: any) => ({
     ...order,
     _id: order._id.toString(),
-    createdAt: order.createdAt.toISOString(),
+    createdAt: new Date(order.createdAt).toLocaleString(), // Format date here
   }));
 
   return { orders, hasMore };
@@ -525,7 +526,7 @@ export async function getUsersForAdmin(page: number, sort: string, search: strin
   const users = usersFromDb.map((user: any) => ({
     ...user,
     _id: user._id.toString(),
-    createdAt: user.createdAt.toISOString(),
+    createdAt: new Date(user.createdAt).toLocaleString(), // Format date here
   }));
 
 
