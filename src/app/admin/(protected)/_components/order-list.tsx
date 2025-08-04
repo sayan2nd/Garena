@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,17 +35,24 @@ export function OrderList({ initialOrders, status, title, showActions = false, i
     const [orders, setOrders] = useState<ClientOrder[]>(initialOrders);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(initialHasMore);
-    const [sort, setSort] = useState(useSearchParams().get('sort') || 'asc');
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    
+    const sort = searchParams.get('sort') || 'asc';
+    const search = searchParams.get('search') || '';
+
+    useEffect(() => {
+        setOrders(initialOrders);
+        setHasMore(initialHasMore);
+        setPage(1);
+    }, [initialOrders, initialHasMore]);
 
     const handleLoadMore = async () => {
         startTransition(async () => {
             const nextPage = page + 1;
-            const search = searchParams.get('search') || '';
             const { orders: newOrders, hasMore: newHasMore } = await getOrdersForAdmin(nextPage, sort, search, status);
             setOrders(prev => [...prev, ...newOrders]);
             setHasMore(newHasMore);
@@ -55,7 +62,6 @@ export function OrderList({ initialOrders, status, title, showActions = false, i
 
     const handleSortToggle = () => {
         const newSort = sort === 'asc' ? 'desc' : 'asc';
-        setSort(newSort);
         const params = new URLSearchParams(searchParams);
         params.set('sort', newSort);
         router.push(`${pathname}?${params.toString()}`);
