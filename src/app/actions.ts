@@ -11,6 +11,7 @@ import { randomBytes } from 'crypto';
 import { ensureUserId } from '@/lib/user-actions';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function askQuestion(
   input: CustomerFAQChatbotInput
@@ -397,7 +398,7 @@ export async function submitUtr(orderId: string, utr: string): Promise<{ success
 }
 
 // --- Admin Actions ---
-export async function verifyAdminPassword(prevState: any, formData: FormData): Promise<{message: string, success: boolean}> {
+export async function verifyAdminPassword(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -410,14 +411,16 @@ export async function verifyAdminPassword(prevState: any, formData: FormData): P
 
   if (isValid) {
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    cookies().set('admin_session', 'true', { expires, httpOnly: true, sameSite: 'strict' });
-    return { message: 'Login successful', success: true };
+    cookies().set('admin_session', 'true', { expires, httpOnly: true, sameSite: 'strict', path: '/' });
+    revalidatePath('/admin');
+    redirect('/admin');
   } else {
     return { message: 'Incorrect password.', success: false };
   }
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {
+  noStore();
   return cookies().get('admin_session')?.value === 'true';
 }
 
