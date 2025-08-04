@@ -677,7 +677,7 @@ const productsToSeed = [
   { name: "2180 Diamonds", price: 100, imageUrl: "/img/2180.png" },
   { name: "5600 Diamonds", price: 120, imageUrl: "/img/5600.png" },
   { name: "Weekly Membership", price: 140, imageUrl: "/img/weekly.png" },
-  { name: "Monthly Membership", price: 160, imageUrl: "/img/monthely.png" },
+  { name: "Monthly Membership", price: 160, imageUrl: "/img/monthly.png" },
   { name: "Itachi Uchiha Bundle", price: 180, imageUrl: "/img/itachi.png" },
   { name: "MP40 - Predatory Cobra", price: 200, imageUrl: "/img/mp40.png" },
   { name: "AK47 - Blue Flame Draco", price: 220, imageUrl: "/img/ak47.png" },

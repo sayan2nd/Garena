@@ -30,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </CardHeader>
         <CardContent className="flex-grow p-4">
-          <div className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary animate-pulse mb-1">
+          <div className="text-sm font-bold text-primary mb-1">
             Quantity: {product.quantity}
           </div>
           <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
