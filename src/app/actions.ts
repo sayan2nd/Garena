@@ -12,6 +12,7 @@ import { ensureUserId } from '@/lib/user-actions';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
+import { sendRedeemCodeNotification } from '@/lib/email';
 
 const key = new TextEncoder().encode(process.env.SESSION_SECRET || 'your-fallback-secret-for-session');
 
@@ -316,6 +317,14 @@ export async function createRedeemCodeOrder(
     try {
         const db = await connectToDatabase();
         await db.collection('orders').insertOne(newOrder);
+
+        // Send email notification
+        await sendRedeemCodeNotification({
+          gamingId: newOrder.gamingId,
+          productName: newOrder.productName,
+          redeemCode: newOrder.redeemCode!
+        });
+
         revalidatePath('/order');
         return { success: true, message: 'Order is processing.' };
     } catch (error) {
