@@ -696,18 +696,18 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
 
 // --- Product Management Actions ---
 const productsToSeed = [
-  { name: "100 Diamonds", price: 20, imageUrl: "/img/100.png" },
-  { name: "310 Diamonds", price: 40, imageUrl: "/img/310.png" },
-  { name: "520 Diamonds", price: 60, imageUrl: "/img/520.png" },
-  { name: "1060 Diamonds", price: 80, imageUrl: "/img/1060.png" },
-  { name: "2180 Diamonds", price: 100, imageUrl: "/img/2180.png" },
-  { name: "5600 Diamonds", price: 120, imageUrl: "/img/5600.png" },
-  { name: "Weekly Membership", price: 140, imageUrl: "/img/weekly.png" },
-  { name: "Monthly Membership", price: 160, imageUrl: "/img/monthly.png" },
-  { name: "Itachi Uchiha Bundle", price: 180, imageUrl: "/img/itachi.png" },
-  { name: "MP40 - Predatory Cobra", price: 200, imageUrl: "/img/mp40.png" },
-  { name: "AK47 - Blue Flame Draco", price: 220, imageUrl: "/img/ak47.png" },
-  { name: "LOL Emote", price: 240, imageUrl: "/img/lol.png" },
+  { name: "100 Diamonds", price: 20, imageUrl: "/img/100.png", dataAiHint: 'diamond jewel' },
+  { name: "310 Diamonds", price: 40, imageUrl: "/img/310.png", dataAiHint: 'diamond jewel' },
+  { name: "520 Diamonds", price: 60, imageUrl: "/img/520.png", dataAiHint: 'diamond jewel' },
+  { name: "1060 Diamonds", price: 80, imageUrl: "/img/1060.png", dataAiHint: 'diamond jewel' },
+  { name: "2180 Diamonds", price: 100, imageUrl: "/img/2180.png", dataAiHint: 'diamond jewel' },
+  { name: "5600 Diamonds", price: 120, imageUrl: "/img/5600.png", dataAiHint: 'diamond jewel' },
+  { name: "Weekly Membership", price: 140, imageUrl: "/img/weekly.png", dataAiHint: 'membership card' },
+  { name: "Monthly Membership", price: 160, imageUrl: "/img/monthly.png", dataAiHint: 'membership card' },
+  { name: "Itachi Uchiha Bundle", price: 180, imageUrl: "/img/itachi.png", dataAiHint: 'anime character' },
+  { name: "MP40 - Predatory Cobra", price: 200, imageUrl: "/img/mp40.png", dataAiHint: 'cobra snake' },
+  { name: "AK47 - Blue Flame Draco", price: 220, imageUrl: "/img/ak47.png", dataAiHint: 'blue dragon' },
+  { name: "LOL Emote", price: 240, imageUrl: "/img/lol.png", dataAiHint: 'laughing face' },
 ];
 
 async function seedProducts() {
