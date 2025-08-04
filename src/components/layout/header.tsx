@@ -43,7 +43,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center justify-end md:hidden ml-4">
+        <div className="flex items-center md:hidden ml-auto">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
