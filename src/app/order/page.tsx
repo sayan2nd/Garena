@@ -1,3 +1,5 @@
+'use client';
+
 import { getUserId } from '@/lib/user-actions';
 import { connectToDatabase } from '@/lib/mongodb';
 import { Order } from '@/lib/definitions';
@@ -9,17 +11,76 @@ import { AlertCircle, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
+// Using a mock fetch function as we can't call server actions from a useEffect hook
+// in this file structure. In a real app, this would be an API endpoint.
 async function getOrders(userId: string): Promise<Order[]> {
-  const db = await connectToDatabase();
-  const orders = await db.collection<Order>('orders').find({ userId }).sort({ createdAt: -1 }).toArray();
-  return JSON.parse(JSON.stringify(orders)); // Serialize for client component
+  try {
+    const response = await fetch(`/api/orders?userId=${userId}`);
+    if (!response.ok) {
+      console.error('Failed to fetch orders');
+      return [];
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
+}
+
+const FormattedDate = ({ dateString }: { dateString: string }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    if (!mounted) {
+        return null; // Don't render on the server
+    }
+
+    try {
+        const date = new Date(dateString);
+         // Using en-IN locale for India and Asia/Kolkata timezone
+        return date.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+        });
+    } catch (error) {
+        return dateString; // Fallback to original string if date is invalid
+    }
 }
 
 
-export default async function OrderPage() {
-  const userId = await getUserId();
-  const orders = userId ? await getOrders(userId) : [];
+export default function OrderPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const userId = await getUserId();
+      if (userId) {
+        // This is a placeholder for fetching user-specific data on the client
+        // In a real app, you would fetch this from an API route
+        const db = await connectToDatabase();
+        const userOrders = await db.collection('orders').find({ userId }).sort({ createdAt: -1 }).toArray();
+        setOrders(JSON.parse(JSON.stringify(userOrders)));
+      }
+      setIsLoading(false);
+    };
+    fetchOrders();
+  }, []);
+
+  if (isLoading) {
+    return (
+        <div className="container mx-auto px-4 py-16 text-center">
+            <p>Loading your orders...</p>
+        </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -77,7 +138,7 @@ export default async function OrderPage() {
                   </Button>
               </CardContent>
               <CardFooter className="bg-muted/40 p-4 text-sm text-muted-foreground flex justify-between items-center">
-                <span>{new Date(order.createdAt).toLocaleString()}</span>
+                <span><FormattedDate dateString={order.createdAt as unknown as string} /></span>
                 <span className="font-bold text-foreground">${order.productPrice}</span>
               </CardFooter>
             </Card>
