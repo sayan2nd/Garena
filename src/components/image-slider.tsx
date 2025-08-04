@@ -63,7 +63,7 @@ export default function ImageSlider() {
           <CarouselContent>
             {sliderImages.map((image, index) => (
               <CarouselItem key={index}>
-                <div className="relative h-[250px] md:h-[350px] lg:h-[400px] w-full overflow-hidden rounded-lg">
+                <div className="relative h-[200px] md:h-[250px] lg:h-[300px] w-full overflow-hidden rounded-lg">
                   <Image
                     src={image.src}
                     alt={image.alt}
