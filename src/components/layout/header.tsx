@@ -24,11 +24,6 @@ const navLinks = [
 export default function Header() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
-  const [isOrderPage, setIsOrderPage] = useState(false);
-
-  useEffect(() => {
-    setIsOrderPage(pathname === '/order');
-  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,7 +37,7 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
              <Button asChild className={cn(
                 'bg-primary/10 hover:bg-primary/20 text-primary',
-                isOrderPage && 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                pathname === '/order' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
              )}>
                 <Link href="/order">
                     Order
