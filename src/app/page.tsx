@@ -1,15 +1,10 @@
 import ImageSlider from '@/components/image-slider';
 import ProductCard from '@/components/product-card';
 import FaqChatbot from '@/components/faq-chatbot';
+import { getProducts } from './actions';
 
-export default function Home() {
-  const products = Array.from({ length: 12 }, (_, i) => ({
-    id: `item-${i + 1}`,
-    name: `Game Item Pack ${i + 1}`,
-    price: (i + 1) * 20,
-    imageUrl: 'https://placehold.co/600x400.png',
-    dataAiHint: 'game item',
-  }));
+export default async function Home() {
+  const products = await getProducts();
 
   return (
     <div className="flex flex-col">
@@ -22,7 +17,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
             {products.map((product) => (
               <ProductCard
-                key={product.id}
+                key={product._id}
                 product={product}
               />
             ))}

@@ -288,7 +288,7 @@ const createOrderSchema = z.object({
 export async function createUpiOrder(product: Product, gamingId: string): Promise<{ success: boolean; orderId?: string; message: string }> {
     const validatedData = createOrderSchema.safeParse({
         gamingId,
-        productId: product.id,
+        productId: product._id,
         productName: product.name,
         productPrice: product.price,
         productImageUrl: product.imageUrl,
@@ -336,7 +336,7 @@ export async function createRedeemCodeOrder(
   gamingId: string,
   redeemCode: string
 ): Promise<{ success: boolean; message: string }> {
-    const validatedData = redeemCodeSchema.safeParse({ gamingId, productId: product.id, redeemCode });
+    const validatedData = redeemCodeSchema.safeParse({ gamingId, productId: product._id, redeemCode });
     if (!validatedData.success) {
         return { success: false, message: 'Invalid data provided.' };
     }
@@ -350,7 +350,7 @@ export async function createRedeemCodeOrder(
     const newOrder: Omit<Order, '_id'> = {
         userId,
         gamingId: validatedData.data.gamingId,
-        productId: product.id,
+        productId: product._id,
         productName: product.name,
         productPrice: product.price,
         productImageUrl: product.imageUrl,
@@ -409,6 +409,7 @@ type AdminFormState = {
 };
 
 export async function verifyAdminPassword(prevState: AdminFormState, formData: FormData): Promise<FormState> {
+  noStore();
   const password = formData.get('password') as string;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -694,4 +695,95 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
     revalidatePath('/admin/withdrawals');
     revalidatePath('/account');
     return { success: true };
+}
+
+// --- Product Management Actions ---
+async function seedProducts() {
+    const db = await connectToDatabase();
+    const productCollection = db.collection('products');
+    const count = await productCollection.countDocuments();
+  
+    if (count === 0) {
+      console.log('No products found, seeding database...');
+      const productsToInsert = Array.from({ length: 12 }, (_, i) => ({
+        name: `Game Item Pack ${i + 1}`,
+        price: (i + 1) * 20,
+        imageUrl: 'https://placehold.co/600x400.png',
+        dataAiHint: 'game item',
+        isAvailable: true,
+        isVanished: false,
+      }));
+      await productCollection.insertMany(productsToInsert);
+      console.log('Database seeded with 12 products.');
+    }
+}
+  
+// Immediately invoke the seeding function.
+// This will run once when the server starts.
+seedProducts().catch(console.error);
+  
+export async function getProducts() {
+    noStore();
+    const db = await connectToDatabase();
+    const productsFromDb = await db.collection('products')
+      .find({ isVanished: false })
+      .sort({ price: 1 })
+      .toArray();
+
+    return productsFromDb.map((p: any) => ({
+        ...p,
+        _id: p._id.toString(),
+    }));
+}
+
+const productUpdateSchema = z.object({
+    name: z.string().min(3, 'Product name must be at least 3 characters.'),
+    price: z.coerce.number().positive('Price must be a positive number.'),
+    isAvailable: z.enum(['on', 'off']).optional(),
+});
+
+export async function updateProduct(productId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+
+    const rawFormData = Object.fromEntries(formData.entries());
+    const validatedFields = productUpdateSchema.safeParse(rawFormData);
+    
+    if (!validatedFields.success) {
+        return { success: false, message: validatedFields.error.errors.map(e => e.message).join(', ') };
+    }
+
+    const { name, price } = validatedFields.data;
+    const isAvailable = rawFormData.isAvailable === 'on';
+
+    const { ObjectId } = await import('mongodb');
+    const db = await connectToDatabase();
+    await db.collection('products').updateOne(
+        { _id: new ObjectId(productId) },
+        { $set: { name, price, isAvailable } }
+    );
+    
+    revalidatePath('/');
+    revalidatePath('/admin/price-management');
+    return { success: true, message: 'Product updated.' };
+}
+
+export async function vanishProduct(productId: string): Promise<{ success: boolean; message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+
+    const { ObjectId } = await import('mongodb');
+    const db = await connectToDatabase();
+    await db.collection('products').updateOne(
+        { _id: new ObjectId(productId) },
+        { $set: { isVanished: true } }
+    );
+
+    revalidatePath('/');
+    revalidatePath('/admin/price-management');
+    return { success: true, message: 'Product vanished.' };
 }

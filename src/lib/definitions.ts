@@ -11,11 +11,13 @@ export interface User {
 }
 
 export interface Product {
-    id: string;
+    _id: string; // From MongoDB
     name: string;
     price: number;
     imageUrl: string;
     dataAiHint: string;
+    isAvailable: boolean;
+    isVanished: boolean;
 }
 
 export interface Order {

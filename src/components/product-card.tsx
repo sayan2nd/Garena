@@ -12,6 +12,7 @@ import {
 import { useState } from 'react';
 import PurchaseModal from './purchase-modal';
 import type { Product } from '@/lib/definitions';
+import { Ban } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -32,12 +33,23 @@ export default function ProductCard({ product }: ProductCardProps) {
           <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
         </CardContent>
         <CardFooter className="p-4 pt-0">
-          <Button 
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105"
-            onClick={() => setIsModalOpen(true)}
-          >
-            Buy (${product.price})
-          </Button>
+          {product.isAvailable ? (
+            <Button 
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Buy (${product.price})
+            </Button>
+          ) : (
+            <Button 
+              className="w-full font-bold text-base"
+              disabled
+              variant="secondary"
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              Item Unavailable
+            </Button>
+          )}
         </CardFooter>
       </Card>
       {isModalOpen && <PurchaseModal product={product} onClose={() => setIsModalOpen(false)} />}
