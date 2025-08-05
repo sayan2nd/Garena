@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,15 +31,16 @@ function SubmitButton() {
 export default function CoinSystem({ user }: CoinSystemProps) {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [hasModalBeenDismissed, setHasModalBeenDismissed] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // If user is not logged in, and modal is not already open, open it.
-    if (!user && !isRegisterModalOpen) {
-      const timer = setTimeout(() => setIsRegisterModalOpen(true), 500); // Small delay
+    // If user is not logged in, modal hasn't been dismissed, and it's not already open, then show it.
+    if (!user && !hasModalBeenDismissed && !isRegisterModalOpen) {
+      const timer = setTimeout(() => setIsRegisterModalOpen(true), 1500); // Delay before showing
       return () => clearTimeout(timer);
     }
-  }, [user, isRegisterModalOpen]);
+  }, [user, isRegisterModalOpen, hasModalBeenDismissed]);
   
   const handleTransfer = async (formData: FormData) => {
     const recipientGamingId = formData.get('recipientId') as string;
@@ -59,10 +61,18 @@ export default function CoinSystem({ user }: CoinSystemProps) {
         setIsRegisterModalOpen(true);
     }
   };
+
+  const handleModalOpenChange = (isOpen: boolean) => {
+    setIsRegisterModalOpen(isOpen);
+    // If modal is being closed and user is still not registered, mark as dismissed.
+    if (!isOpen && !user) {
+      setHasModalBeenDismissed(true);
+    }
+  };
   
   return (
     <>
-      <GamingIdModal isOpen={isRegisterModalOpen} onOpenChange={setIsRegisterModalOpen} />
+      <GamingIdModal isOpen={isRegisterModalOpen} onOpenChange={handleModalOpenChange} />
       <section className="w-full py-6 bg-muted/40 border-b">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex justify-center items-stretch gap-4">
@@ -73,7 +83,7 @@ export default function CoinSystem({ user }: CoinSystemProps) {
               className="flex-1 max-w-[100px] sm:max-w-[120px]"
             >
               <Card className="hover:bg-primary/5 transition-colors h-full">
-                <CardContent className="p-2 flex flex-col items-center justify-center text-center min-h-[80px]">
+                <CardContent className="p-2 flex flex-col items-center justify-center text-center min-h-[70px] w-[100px] sm:w-[120px]">
                     <Tv className="w-5 h-5 mx-auto text-primary" />
                     <p className="font-semibold mt-1 text-xs">Watch Ad</p>
                     <p className="text-xs text-muted-foreground">(+5 Coins)</p>
@@ -85,7 +95,7 @@ export default function CoinSystem({ user }: CoinSystemProps) {
               <DialogTrigger asChild>
                   <div onClick={handleUnregisteredClick} className="flex-1 max-w-[100px] sm:max-w-[120px] cursor-pointer">
                       <Card className="hover:bg-primary/5 transition-colors h-full">
-                        <CardContent className="p-2 flex flex-col items-center justify-center text-center min-h-[80px]">
+                        <CardContent className="p-2 flex flex-col items-center justify-center text-center min-h-[70px] w-[100px] sm:w-[120px]">
                             <Coins className="w-5 h-5 mx-auto text-amber-500" />
                             <p className="font-semibold mt-1 text-xs">{user ? `${user.coins} Coins` : "Your Wallet"}</p>
                              <p className="text-xs text-muted-foreground">&nbsp;</p>
