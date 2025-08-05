@@ -55,7 +55,7 @@ export default function ReferralSystem() {
       <CardHeader>
         <CardTitle>Referral System</CardTitle>
         <CardDescription>
-          Share your unique link with friends. When they sign up and complete their first top-up, you'll receive a bonus equal to 50% of their top-up amount in your wallet!
+          Share your unique link with friends. When they sign up and purchase something, you'll receive a bonus equal to 50% of their top-up amount in your wallet!
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

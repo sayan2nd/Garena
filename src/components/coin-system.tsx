@@ -95,7 +95,7 @@ export default function CoinSystem({ user }: CoinSystemProps) {
                       <Card className="hover:bg-primary/5 transition-colors h-full">
                         <CardContent className="p-2 flex flex-col items-center justify-center text-center min-h-[60px] w-[100px] sm:w-[120px]">
                             <Coins className="w-5 h-5 mx-auto text-amber-500" />
-                            <p className="font-semibold mt-1 text-xs">{user ? `${user.coins} Coins` : "Your Wallet"}</p>
+                            <p className="font-semibold mt-1 text-xs">{user ? `${user.coins} Coins` : "0 Coins"}</p>
                              <p className="text-xs text-muted-foreground">&nbsp;</p>
                         </CardContent>
                       </Card>
