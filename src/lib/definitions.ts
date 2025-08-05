@@ -16,7 +16,7 @@ export interface User {
     gamingId: string;
     coins: number;
     referralCode?: string;
-    referredBy?: string; // This will store the username of the referrer from the 'legacy_users' collection
+    referredByCode?: string; // This will store the referral code of the referrer
     createdAt: Date;
 }
 
@@ -45,7 +45,7 @@ export interface Order {
     status: 'Processing' | 'Completed' | 'Failed';
     utr?: string;
     redeemCode?: string;
-    referredBy?: string; // This will store the username of the referrer from the 'legacy_users' collection
+    referralCode?: string; // This will store the referral code of the referrer
     coinsUsed: number;
     finalPrice: number;
     createdAt: Date;

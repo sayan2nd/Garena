@@ -293,14 +293,13 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
     }
 
     const referralCode = cookies().get('referral_code')?.value;
-    const referringUser = referralCode ? await db.collection<any>('legacy_users').findOne({ referralCode: referralCode }) : null;
 
     const newUser: Omit<User, '_id'> = {
       gamingId,
       coins: 800,
       createdAt: new Date(),
       referralCode: randomBytes(4).toString('hex'),
-      referredBy: referringUser ? referringUser.username : undefined,
+      referredByCode: referralCode, // Store the referral code
     };
 
     const result = await db.collection('users').insertOne(newUser);
@@ -309,7 +308,7 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
     
     const createdUser = { ...newUser, _id: result.insertedId };
     
-    if (referringUser) {
+    if (referralCode) {
         // No coin reward on signup, reward on purchase
         cookies().delete('referral_code');
     }
@@ -470,7 +469,7 @@ export async function createRedeemCodeOrder(
         paymentMethod: 'Redeem Code',
         status: 'Processing',
         redeemCode: validatedData.data.redeemCode,
-        referredBy: user.referredBy, // Save the referrer's username
+        referralCode: user.referredByCode, // Save the referrer's code
         coinsUsed,
         finalPrice,
         createdAt: new Date(),
@@ -525,7 +524,7 @@ export async function submitUtr(product: Product, gamingId: string, utr: string,
         paymentMethod: 'UPI',
         status: 'Processing',
         utr: validatedData.data.utr,
-        referredBy: user.referredBy, // Save the referrer's username
+        referralCode: user.referredByCode, // Save the referrer's code
         coinsUsed,
         finalPrice,
         createdAt: new Date(),
@@ -603,10 +602,10 @@ export async function updateOrderStatus(orderId: string, status: 'Completed' | '
     await db.collection('orders').updateOne({ _id: new ObjectId(orderId) }, { $set: { status } });
     
     // If order is completed and was referred, reward the referrer
-    if (status === 'Completed' && order.referredBy) {
+    if (status === 'Completed' && order.referralCode) {
         const rewardAmount = order.finalPrice * 0.50;
         await db.collection('legacy_users').updateOne(
-            { username: order.referredBy },
+            { referralCode: order.referralCode },
             { $inc: { walletBalance: rewardAmount } }
         );
     }
@@ -646,7 +645,7 @@ export async function getOrdersForAdmin(
   if (search) {
       query.$or = [
           { gamingId: { $regex: search, $options: 'i' } },
-          { referredBy: { $regex: search, $options: 'i' } }
+          { referralCode: { $regex: search, $options: 'i' } }
       ]
   }
 
