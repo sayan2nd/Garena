@@ -29,7 +29,7 @@ interface PurchaseModalProps {
 
 type ModalStep = 'register' | 'details' | 'payment' | 'redeem' | 'utr' | 'processing';
 
-const upiId = "9907703991-1@okbizaxis";
+const upiId = "pushkarmondal9093@oksbi";
 
 export default function PurchaseModal({ product, user: initialUser, onClose }: PurchaseModalProps) {
   const [isOpen, setIsOpen] = useState(true);
