@@ -13,7 +13,6 @@ import type { Product, User } from '@/lib/definitions';
 import { Loader2, X, ShieldCheck, Smartphone, Globe, Coins } from 'lucide-react';
 import Image from 'next/image';
 import { createRedeemCodeOrder, registerGamingId as registerAction, createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions';
-import QrCode from 'react-qr-code';
 import {
   Select,
   SelectContent,
@@ -133,6 +132,11 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         },
         theme: {
             color: "#F97316"
+        },
+        modal: {
+            ondismiss: function() {
+                setIsLoading(false); // Re-enable button if user closes Razorpay popup
+            }
         }
     };
 
@@ -147,12 +151,9 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     });
 
     rzp.open();
-    // Don't set loading to false here because the Razorpay modal is now open
+    handleClose(); // Close our modal once Razorpay's is open
   };
 
-  const handleBuyWithRedeemCode = async () => {
-    setStep('redeem');
-  };
 
   const handleRedeemSubmit = async () => {
     if (!user) {
