@@ -37,6 +37,7 @@ export interface Product {
     coinsApplicable: number;
     endDate?: Date;
     displayOrder: number;
+    category?: string;
 }
 
 export interface Order {

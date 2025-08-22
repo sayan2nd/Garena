@@ -132,7 +132,15 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                     defaultValue={product.quantity}
                   />
                 </div>
-                <div className="space-y-2 lg:col-span-2">
+                <div className="space-y-2">
+                  <Label htmlFor={`category-${product._id}`}>Category</Label>
+                  <Input
+                    id={`category-${product._id}`}
+                    name="category"
+                    defaultValue={product.category}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor={`imageUrl-${product._id}`}>Image URL</Label>
                   <Input
                     id={`imageUrl-${product._id}`}

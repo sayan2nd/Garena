@@ -869,18 +869,18 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
 
 // --- Product Management Actions ---
 const productsToSeed = [
-  { name: "100 Diamonds", price: 80, imageUrl: "/img/100.png", dataAiHint: 'diamond jewel', coinsApplicable: 50, displayOrder: 1 },
-  { name: "310 Diamonds", price: 240, imageUrl: "/img/310.png", dataAiHint: 'diamond jewel', coinsApplicable: 150, displayOrder: 2 },
-  { name: "520 Diamonds", price: 400, imageUrl: "/img/520.png", dataAiHint: 'diamond jewel', coinsApplicable: 200, displayOrder: 3 },
-  { name: "1060 Diamonds", price: 800, imageUrl: "/img/1060.png", dataAiHint: 'diamond jewel', coinsApplicable: 300, displayOrder: 4 },
-  { name: "2180 Diamonds", price: 1600, imageUrl: "/img/2180.png", dataAiHint: 'diamond jewel', coinsApplicable: 900, displayOrder: 5 },
-  { name: "5600 Diamonds", price: 4000, imageUrl: "/img/5600.png", dataAiHint: 'diamond jewel', coinsApplicable: 2000, displayOrder: 6 },
-  { name: "Weekly Membership", price: 159, imageUrl: "/img/weekly.png", dataAiHint: 'membership card', coinsApplicable: 59, displayOrder: 7 },
-  { name: "Monthly Membership", price: 800, imageUrl: "/img/monthly.png", dataAiHint: 'membership card', coinsApplicable: 300, displayOrder: 8 },
-  { name: "Itachi Uchiha Bundle", price: 5000, imageUrl: "/img/itachi.png", dataAiHint: 'anime character', coinsApplicable: 4000, displayOrder: 9 },
-  { name: "MP40 - Predatory Cobra", price: 5000, imageUrl: "/img/mp40.png", dataAiHint: 'cobra snake', coinsApplicable: 2000, displayOrder: 10 },
-  { name: "AK47 - Blue Flame Draco", price: 5000, imageUrl: "/img/ak47.png", dataAiHint: 'blue dragon', coinsApplicable: 2000, displayOrder: 11 },
-  { name: "LOL Emote", price: 3000, imageUrl: "/img/lol.png", dataAiHint: 'laughing face', coinsApplicable: 1000, displayOrder: 12 },
+  { name: "100 Diamonds", price: 80, imageUrl: "/img/100.png", dataAiHint: 'diamond jewel', coinsApplicable: 50, displayOrder: 1, category: "Diamonds" },
+  { name: "310 Diamonds", price: 240, imageUrl: "/img/310.png", dataAiHint: 'diamond jewel', coinsApplicable: 150, displayOrder: 2, category: "Diamonds" },
+  { name: "520 Diamonds", price: 400, imageUrl: "/img/520.png", dataAiHint: 'diamond jewel', coinsApplicable: 200, displayOrder: 3, category: "Diamonds" },
+  { name: "1060 Diamonds", price: 800, imageUrl: "/img/1060.png", dataAiHint: 'diamond jewel', coinsApplicable: 300, displayOrder: 4, category: "Diamonds" },
+  { name: "2180 Diamonds", price: 1600, imageUrl: "/img/2180.png", dataAiHint: 'diamond jewel', coinsApplicable: 900, displayOrder: 5, category: "Diamonds" },
+  { name: "5600 Diamonds", price: 4000, imageUrl: "/img/5600.png", dataAiHint: 'diamond jewel', coinsApplicable: 2000, displayOrder: 6, category: "Diamonds" },
+  { name: "Weekly Membership", price: 159, imageUrl: "/img/weekly.png", dataAiHint: 'membership card', coinsApplicable: 59, displayOrder: 7, category: "Membership" },
+  { name: "Monthly Membership", price: 800, imageUrl: "/img/monthly.png", dataAiHint: 'membership card', coinsApplicable: 300, displayOrder: 8, category: "Membership" },
+  { name: "Itachi Uchiha Bundle", price: 5000, imageUrl: "/img/itachi.png", dataAiHint: 'anime character', coinsApplicable: 4000, displayOrder: 9, category: "Bundles" },
+  { name: "MP40 - Predatory Cobra", price: 5000, imageUrl: "/img/mp40.png", dataAiHint: 'cobra snake', coinsApplicable: 2000, displayOrder: 10, category: "Gun Skins" },
+  { name: "AK47 - Blue Flame Draco", price: 5000, imageUrl: "/img/ak47.png", dataAiHint: 'blue dragon', coinsApplicable: 2000, displayOrder: 11, category: "Gun Skins" },
+  { name: "LOL Emote", price: 3000, imageUrl: "/img/lol.png", dataAiHint: 'laughing face', coinsApplicable: 1000, displayOrder: 12, category: "Emotes" },
   { 
     name: "MP40 - UCHIHA'S LEGACY", 
     price: 4000, 
@@ -888,7 +888,8 @@ const productsToSeed = [
     dataAiHint: 'anime weapon', 
     coinsApplicable: 2500,
     endDate: new Date('2024-08-14T00:00:00+05:30'), // Aug 14, 12 AM IST
-    displayOrder: 13
+    displayOrder: 13,
+    category: "Limited Time"
   },
 ];
 
@@ -902,6 +903,7 @@ async function seedProducts() {
     updateOne: {
       filter: { name: p.name },
       update: {
+        $set: { category: p.category },
         $setOnInsert: {
             ...p,
             _id: new ObjectId(), // Generate new ID on insert
@@ -941,7 +943,8 @@ const productUpdateSchema = z.object({
     coinsApplicable: z.coerce.number().int().min(0, 'Applicable coins cannot be negative.'),
     endDate: z.string().optional(),
     imageUrl: z.string().url('Must be a valid URL.'),
-    displayOrder: z.coerce.number().int().min(1, 'Display order must be a positive number.')
+    displayOrder: z.coerce.number().int().min(1, 'Display order must be a positive number.'),
+    category: z.string().optional(),
 });
 
 export async function updateProduct(productId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
@@ -957,7 +960,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         return { success: false, message: validatedFields.error.errors.map(e => e.message).join(', ') };
     }
 
-    const { name, price, quantity, coinsApplicable, imageUrl, displayOrder } = validatedFields.data;
+    const { name, price, quantity, coinsApplicable, imageUrl, displayOrder, category } = validatedFields.data;
     const isAvailable = rawFormData.isAvailable === 'on';
     const endDate = validatedFields.data.endDate ? new Date(validatedFields.data.endDate) : undefined;
 
@@ -976,7 +979,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
 
     await db.collection<Product>('products').updateOne(
         { _id: new ObjectId(productId) },
-        { $set: { name, price, quantity, isAvailable, coinsApplicable, endDate: endDate, imageUrl, displayOrder } }
+        { $set: { name, price, quantity, isAvailable, coinsApplicable, endDate: endDate, imageUrl, displayOrder, category } }
     );
     
     revalidatePath('/');
@@ -1005,7 +1008,8 @@ export async function addProduct(): Promise<{ success: boolean, message: string 
         isAvailable: false,
         isVanished: false,
         coinsApplicable: 0,
-        displayOrder: newDisplayOrder
+        displayOrder: newDisplayOrder,
+        category: "Uncategorized"
     };
 
     await db.collection<Product>('products').insertOne(newProduct as Product);
