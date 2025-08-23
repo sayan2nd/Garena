@@ -79,6 +79,11 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     setIsLoading(false);
   };
 
+  const coinsToUse = user && !product.isCoinProduct ? Math.min(user.coins, product.coinsApplicable || 0) : 0;
+  const finalPrice = product.isCoinProduct 
+    ? product.purchasePrice || product.price 
+    : product.price - coinsToUse;
+
   const handleBuyWithUpi = async () => {
     setIsLoading(true);
     
@@ -119,7 +124,10 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
 
             if (verificationResult.success) {
                 toast({ title: 'Success', description: verificationResult.message });
-                // The step is already 'processing', the UI will show the right message
+                 if (product.isCoinProduct) {
+                    goToOrderPage();
+                 }
+                // The step is already 'processing', the UI will show the right message for normal products
             } else {
                 toast({ variant: 'destructive', title: 'Payment Failed', description: verificationResult.message });
                 handleClose();
@@ -174,23 +182,19 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     setIsLoading(false);
   }
   
-  const coinsToUse = user ? Math.min(user.coins, product.coinsApplicable) : 0;
-  const finalPrice = product.price - coinsToUse;
-
-
   const renderContent = () => {
     switch (step) {
       case 'register':
         return (
              <>
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-headline">Welcome to Garena Gears</DialogTitle>
+                    <DialogTitle className="text-2xl font-headline">Welcome to Garena Store</DialogTitle>
                     <DialogDescription>Please enter your Gaming ID to continue.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                     <div className="space-y-2">
                         <Label htmlFor="gaming-id-register">Gaming ID</Label>
-                        <Input id="gaming-id-register" placeholder="Your in-game user ID" value={gamingId} onChange={e => setGamingId(e.target.value)} />
+                        <Input id="gaming-id-register" placeholder="Your in-game user ID" value={gamingId} onChange={e => setGamingId(e.target.value.replace(/\D/g, ''))} type="tel" pattern="[0-9]*" />
                     </div>
                     <Button onClick={handleRegister} className="w-full" disabled={isLoading}>
                         {isLoading ? <Loader2 className="animate-spin" /> : 'Register & Continue'}
@@ -215,8 +219,9 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                     </div>
                     <div>
                         <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground line-through font-sans">Original Price: ₹{product.price}</p>
-                        <p className="text-sm text-amber-600 flex items-center font-sans gap-1"><Coins className="w-4 h-4"/> Coins Applied: -₹{coinsToUse}</p>
+                        {!product.isCoinProduct && <p className="text-sm text-muted-foreground line-through font-sans">Original Price: ₹{product.price}</p>}
+                        {coinsToUse > 0 && !product.isCoinProduct && <p className="text-sm text-amber-600 flex items-center font-sans gap-1"><Coins className="w-4 h-4"/> Coins Applied: -₹{coinsToUse}</p>}
+                        {product.isCoinProduct && <p className="text-sm text-muted-foreground line-through font-sans">Original Price: ₹{product.price}</p>}
                         <p className="text-2xl font-bold text-primary font-sans">Final Price: ₹{finalPrice}</p>
                     </div>
                 </div>

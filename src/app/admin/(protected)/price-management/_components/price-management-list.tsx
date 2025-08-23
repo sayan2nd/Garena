@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { updateProduct, vanishProduct, addProduct } from '@/app/actions';
 import type { Product } from '@/lib/definitions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
 
 interface PriceManagementListProps {
   initialProducts: Product[];
@@ -31,6 +33,8 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
   const [products, setProducts] = useState(initialProducts);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+
 
   const handleUpdate = (productId: string, formData: FormData) => {
     startTransition(async () => {
@@ -55,11 +59,12 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
     });
   };
   
-  const handleAddProduct = () => {
+  const handleAddProduct = (isCoinProduct: boolean) => {
     startTransition(async () => {
-        const result = await addProduct();
+        const result = await addProduct(isCoinProduct);
         if (result.success) {
             toast({ title: 'Success', description: 'New product added. Please refresh to see it.' });
+            setIsAddProductDialogOpen(false);
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
@@ -75,10 +80,26 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
               Update product details, availability, and coin discounts. Changes will be reflected on the homepage immediately.
             </CardDescription>
         </div>
-         <Button onClick={handleAddProduct} disabled={isPending}>
-            <PlusCircle className="mr-2 h-4 w-4"/>
-            Add New Product
-        </Button>
+        <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
+            <DialogTrigger asChild>
+                <Button disabled={isPending}>
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    Add New Product
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add a New Product</DialogTitle>
+                    <DialogDescription>
+                        Choose the type of product you want to add.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-4">
+                    <Button onClick={() => handleAddProduct(false)} disabled={isPending}>Normal Product</Button>
+                    <Button onClick={() => handleAddProduct(true)} variant="secondary" disabled={isPending}>Coin Product</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent className="space-y-6">
         {products.map((product) => (
@@ -103,7 +124,7 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`price-${product._id}`}>Price (₹)</Label>
+                  <Label htmlFor={`price-${product._id}`}>Original Price (₹)</Label>
                   <Input
                     id={`price-${product._id}`}
                     name="price"
@@ -120,10 +141,23 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                     type="number"
                     step="1"
                     defaultValue={product.coinsApplicable}
+                    disabled={product.isCoinProduct}
                   />
                 </div>
+                 {product.isCoinProduct && (
+                   <div className="space-y-2">
+                        <Label htmlFor={`purchasePrice-${product._id}`}>Purchase Price (₹)</Label>
+                        <Input
+                            id={`purchasePrice-${product._id}`}
+                            name="purchasePrice"
+                            type="number"
+                            step="0.01"
+                            defaultValue={product.purchasePrice}
+                        />
+                    </div>
+                 )}
                 <div className="space-y-2">
-                  <Label htmlFor={`quantity-${product._id}`}>Quantity</Label>
+                  <Label htmlFor={`quantity-${product._id}`}>{product.isCoinProduct ? 'Coins to Give' : 'Quantity'}</Label>
                   <Input
                     id={`quantity-${product._id}`}
                     name="quantity"
@@ -140,7 +174,7 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                     defaultValue={product.category}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-2">
                   <Label htmlFor={`imageUrl-${product._id}`}>Image URL</Label>
                   <Input
                     id={`imageUrl-${product._id}`}

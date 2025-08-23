@@ -93,7 +93,9 @@ export default function ProductCard({ product, user }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const finalPrice = product.price - product.coinsApplicable;
+  const finalPrice = product.isCoinProduct 
+    ? product.purchasePrice || product.price 
+    : product.price - (product.coinsApplicable || 0);
 
   const handleBuyClick = () => {
     if (!user) {
@@ -122,8 +124,10 @@ export default function ProductCard({ product, user }: ProductCardProps) {
         </CardHeader>
         <CardContent className="flex-grow p-4">
           <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
-          <CardDescription className="text-sm">Quantity: {product.quantity}</CardDescription>
-          {product.coinsApplicable > 0 && (
+          <CardDescription className="text-sm">
+            {product.isCoinProduct ? `Get ${product.quantity} Coins` : `Quantity: ${product.quantity}`}
+          </CardDescription>
+          {product.coinsApplicable > 0 && !product.isCoinProduct && (
             <div className="text-xs text-amber-600 font-semibold mt-1 flex items-center font-sans gap-1">
               <Coins className="w-3 h-3" />
               Use {product.coinsApplicable} Coins & Get it for ₹{finalPrice}
@@ -136,7 +140,7 @@ export default function ProductCard({ product, user }: ProductCardProps) {
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105 font-sans"
               onClick={handleBuyClick}
             >
-              Buy <span className="line-through ml-2 text-accent-foreground/80">₹{product.price}</span> <span className="ml-1">₹{finalPrice}</span>
+              Buy {product.price && <span className="line-through ml-2 text-accent-foreground/80">₹{product.price}</span>} <span className="ml-1">₹{finalPrice}</span>
             </Button>
           ) : (
             <Button 

@@ -29,14 +29,16 @@ export interface Product {
     _id: ObjectId; // From MongoDB
     name: string;
     price: number;
+    purchasePrice?: number; // Special price for coin products
     quantity: number;
     imageUrl: string;
     dataAiHint: string;
     isAvailable: boolean;
     isVanished: boolean;
-    coinsApplicable: number;
+    coinsApplicable?: number;
+    isCoinProduct?: boolean;
     endDate?: Date;
-    displayOrder: number;
+    displayOrder?: number;
     category?: string;
 }
 
@@ -55,6 +57,7 @@ export interface Order {
     referralCode?: string; // This will store the referral code of the referrer
     coinsUsed: number;
     finalPrice: number;
+    isCoinProduct?: boolean;
     createdAt: Date;
 }
 

@@ -453,8 +453,8 @@ export async function createRedeemCodeOrder(
     
     const db = await connectToDatabase();
     
-    const coinsUsed = Math.min(user.coins, product.coinsApplicable);
-    const finalPrice = product.price - coinsUsed;
+    const coinsUsed = product.isCoinProduct ? 0 : Math.min(user.coins, product.coinsApplicable || 0);
+    const finalPrice = product.isCoinProduct ? product.purchasePrice || product.price : product.price - coinsUsed;
 
     const newOrder: Omit<Order, '_id'> = {
         userId: user._id.toString(),
@@ -469,13 +469,14 @@ export async function createRedeemCodeOrder(
         referralCode: user.referredByCode, // Save the referrer's code
         coinsUsed,
         finalPrice,
+        isCoinProduct: product.isCoinProduct,
         createdAt: new Date(),
     };
 
     try {
         await db.collection<Order>('orders').insertOne(newOrder as Order);
 
-        if (coinsUsed > 0) {
+        if (coinsUsed > 0 && !product.isCoinProduct) {
             await db.collection<User>('users').updateOne({ _id: new ObjectId(user._id) }, { $inc: { coins: -coinsUsed } });
         }
 
@@ -551,8 +552,9 @@ export async function verifyRazorpayPayment(formData: FormData) {
         return { success: false, message: 'Product or user not found.' };
     }
 
-    const coinsUsed = Math.min(user.coins, product.coinsApplicable);
-    const finalPrice = product.price - coinsUsed;
+    const coinsUsed = product.isCoinProduct ? 0 : Math.min(user.coins, product.coinsApplicable || 0);
+    const finalPrice = product.isCoinProduct ? product.purchasePrice || product.price : product.price - coinsUsed;
+    const orderStatus = product.isCoinProduct ? 'Completed' : 'Processing';
 
     const newOrder: Omit<Order, '_id'> = {
         userId: user._id.toString(),
@@ -562,24 +564,52 @@ export async function verifyRazorpayPayment(formData: FormData) {
         productPrice: product.price,
         productImageUrl: product.imageUrl,
         paymentMethod: 'UPI',
-        status: 'Processing',
+        status: orderStatus,
         utr: razorpay_payment_id, // Storing payment ID in UTR field for consistency
         referralCode: user.referredByCode,
         coinsUsed,
         finalPrice,
+        isCoinProduct: product.isCoinProduct,
         createdAt: new Date(),
     };
 
     try {
-        await db.collection<Order>('orders').insertOne(newOrder as Order);
+        const session = db.client.startSession();
+        await session.withTransaction(async () => {
+            await db.collection<Order>('orders').insertOne(newOrder as Order, { session });
 
-        if (coinsUsed > 0) {
-            await db.collection<User>('users').updateOne({ _id: user._id }, { $inc: { coins: -coinsUsed } });
-        }
+            if (product.isCoinProduct) {
+                // Instantly reward coins for coin product purchase
+                await db.collection<User>('users').updateOne(
+                    { _id: user._id },
+                    { $inc: { coins: product.quantity } },
+                    { session }
+                );
+            } else if (coinsUsed > 0) {
+                // Deduct coins for normal product purchase
+                await db.collection<User>('users').updateOne(
+                    { _id: user._id },
+                    { $inc: { coins: -coinsUsed } },
+                    { session }
+                );
+            }
+
+            // Handle referral reward if the order is completed instantly
+            if (orderStatus === 'Completed' && user.referredByCode) {
+                 const rewardAmount = finalPrice * 0.50;
+                 await db.collection<LegacyUser>('legacy_users').updateOne(
+                    { referralCode: user.referredByCode },
+                    { $inc: { walletBalance: rewardAmount } },
+                    { session }
+                );
+            }
+        });
+        await session.endSession();
         
         revalidatePath('/');
         revalidatePath('/order');
-        return { success: true, message: 'Payment successful, order is processing.' };
+        revalidatePath('/admin/success');
+        return { success: true, message: 'Payment successful, order created.' };
     } catch (error) {
         console.error('Error creating order after payment verification:', error);
         return { success: false, message: 'Failed to create order after payment.' };
@@ -891,6 +921,20 @@ const productsToSeed = [
     displayOrder: 13,
     category: "Limited Time"
   },
+  { 
+    name: "Store Coin",
+    price: 500,
+    purchasePrice: 300,
+    quantity: 2000,
+    imageUrl: "/img/store-coin.png",
+    dataAiHint: "gold coins",
+    isAvailable: true,
+    isVanished: false,
+    coinsApplicable: 0,
+    isCoinProduct: true,
+    displayOrder: 21,
+    category: "Coins"
+  },
 ];
 
 async function seedProducts() {
@@ -903,13 +947,14 @@ async function seedProducts() {
     updateOne: {
       filter: { name: p.name },
       update: {
-        $set: { category: p.category },
+        $set: { category: p.category, purchasePrice: p.purchasePrice },
         $setOnInsert: {
             ...p,
             _id: new ObjectId(), // Generate new ID on insert
-            quantity: 1,
-            isAvailable: true,
+            quantity: p.quantity || 1,
+            isAvailable: p.isAvailable !== undefined ? p.isAvailable : true,
             isVanished: false,
+            isCoinProduct: p.isCoinProduct || false,
         }
       },
       upsert: true,
@@ -938,6 +983,7 @@ export async function getProducts(): Promise<Product[]> {
 const productUpdateSchema = z.object({
     name: z.string().min(3, 'Product name must be at least 3 characters.'),
     price: z.coerce.number().positive('Price must be a positive number.'),
+    purchasePrice: z.coerce.number().optional(),
     quantity: z.coerce.number().int().positive('Quantity must be a positive integer.'),
     isAvailable: z.enum(['on', 'off']).optional(),
     coinsApplicable: z.coerce.number().int().min(0, 'Applicable coins cannot be negative.'),
@@ -960,7 +1006,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         return { success: false, message: validatedFields.error.errors.map(e => e.message).join(', ') };
     }
 
-    const { name, price, quantity, coinsApplicable, imageUrl, displayOrder, category } = validatedFields.data;
+    const { name, price, quantity, coinsApplicable, imageUrl, displayOrder, category, purchasePrice } = validatedFields.data;
     const isAvailable = rawFormData.isAvailable === 'on';
     const endDate = validatedFields.data.endDate ? new Date(validatedFields.data.endDate) : undefined;
 
@@ -979,7 +1025,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
 
     await db.collection<Product>('products').updateOne(
         { _id: new ObjectId(productId) },
-        { $set: { name, price, quantity, isAvailable, coinsApplicable, endDate: endDate, imageUrl, displayOrder, category } }
+        { $set: { name, price, quantity, isAvailable, coinsApplicable, endDate: endDate, imageUrl, displayOrder, category, purchasePrice } }
     );
     
     revalidatePath('/');
@@ -987,7 +1033,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     return { success: true, message: 'Product updated.' };
 }
 
-export async function addProduct(): Promise<{ success: boolean, message: string }> {
+export async function addProduct(isCoinProduct: boolean): Promise<{ success: boolean, message: string }> {
     const isAdmin = await isAdminAuthenticated();
     if (!isAdmin) {
         return { success: false, message: 'Unauthorized' };
@@ -997,20 +1043,39 @@ export async function addProduct(): Promise<{ success: boolean, message: string 
 
     // Find the highest current display order
     const lastProduct = await db.collection<Product>('products').find().sort({ displayOrder: -1 }).limit(1).toArray();
-    const newDisplayOrder = lastProduct.length > 0 ? lastProduct[0].displayOrder + 1 : 1;
+    const newDisplayOrder = lastProduct.length > 0 ? (lastProduct[0].displayOrder || 0) + 1 : 1;
 
-    const newProduct: Omit<Product, '_id'> = {
-        name: "New Product",
-        price: 99,
-        quantity: 1,
-        imageUrl: "https://placehold.co/600x400.png",
-        dataAiHint: "placeholder image",
-        isAvailable: false,
-        isVanished: false,
-        coinsApplicable: 0,
-        displayOrder: newDisplayOrder,
-        category: "Uncategorized"
-    };
+    let newProduct: Omit<Product, '_id'>;
+    
+    if (isCoinProduct) {
+        newProduct = {
+            name: "New Coin Product",
+            price: 100,
+            purchasePrice: 80,
+            quantity: 1000,
+            imageUrl: "https://placehold.co/600x400.png",
+            dataAiHint: "gold coins",
+            isAvailable: false,
+            isVanished: false,
+            coinsApplicable: 0,
+            isCoinProduct: true,
+            displayOrder: newDisplayOrder,
+            category: "Coins"
+        };
+    } else {
+        newProduct = {
+            name: "New Product",
+            price: 99,
+            quantity: 1,
+            imageUrl: "https://placehold.co/600x400.png",
+            dataAiHint: "placeholder image",
+            isAvailable: false,
+            isVanished: false,
+            coinsApplicable: 0,
+            displayOrder: newDisplayOrder,
+            category: "Uncategorized"
+        };
+    }
 
     await db.collection<Product>('products').insertOne(newProduct as Product);
     
