@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useState, useEffect, useActionState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from './ui/card';
-import { Coins, Tv, Shield, KeyRound, Loader2, Send, AlertCircle } from 'lucide-react';
+import { Coins, Tv, Shield, KeyRound, Loader2, Send, AlertCircle, RefreshCw } from 'lucide-react';
 import type { User } from '@/lib/definitions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from './ui/label';
@@ -42,14 +43,25 @@ function SetPasswordSubmitButton() {
 
 const initialState = { success: false, message: '' };
 
+type View = 'transfer' | 'setPassword';
+
 export default function CoinSystem({ user }: CoinSystemProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [hasModalBeenDismissed, setHasModalBeenDismissed] = useState(false);
+  const [view, setView] = useState<View>('transfer');
   const { toast } = useToast();
 
   const [setPasswordState, setPasswordFormAction] = useActionState(setGiftPassword, initialState);
   const [transferState, transferFormAction] = useActionState(transferCoins, initialState);
+  
+  useEffect(() => {
+    if (user?.giftPassword) {
+      setView('transfer');
+    } else {
+      setView('setPassword');
+    }
+  }, [user, isModalOpen]);
 
   useEffect(() => {
     if (!user && !hasModalBeenDismissed) {
@@ -97,83 +109,96 @@ export default function CoinSystem({ user }: CoinSystemProps) {
       setHasModalBeenDismissed(true);
     }
   };
+  
+  const renderSetPasswordView = () => (
+     <form action={setPasswordFormAction}>
+        <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound /> {user?.giftPassword ? 'Reset' : 'Set'} Your Gift Password</DialogTitle>
+            <DialogDescription>Create a secure password to protect your coin transfers. You will need this password every time you send coins to another player.</DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+            <div className="space-y-2">
+            <Label htmlFor="gift-password">New Gift Password</Label>
+            <PasswordInput id="gift-password" name="giftPassword" required minLength={6} />
+            </div>
+        </div>
+        <DialogFooter>
+            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+            <SetPasswordSubmitButton />
+        </DialogFooter>
+    </form>
+  )
+
+  const renderTransferView = () => (
+    <form action={transferFormAction}>
+        <DialogHeader>
+            <DialogTitle>Transfer Coins</DialogTitle>
+            <DialogDescription>
+                Send coins to another user. This action is irreversible. Your current balance is {user?.coins}.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="recipientId">Recipient's Gaming ID</Label>
+                <Input id="recipientId" name="recipientId" required />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                <Input id="amount" name="amount" type="number" required min="1" max={user?.coins} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="transfer-gift-password">Your Gift Password</Label>
+                <PasswordInput id="transfer-gift-password" name="giftPassword" required />
+            </div>
+        </div>
+        <DialogFooter className="sm:justify-between">
+            {user?.canSetGiftPassword ? (
+                <Button variant="outline" onClick={() => setView('setPassword')}>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Reset Password
+                </Button>
+            ) : (
+                <p className="text-xs text-muted-foreground text-left flex-1">To reset password, use all your coins on a verified purchase.</p>
+            )}
+            <div className="flex gap-2 justify-end">
+                <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                <TransferSubmitButton />
+            </div>
+        </DialogFooter>
+    </form>
+  )
+  
+   const renderEligibilityCheckView = () => (
+    <>
+        <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Shield /> Secure Your Gifting</DialogTitle>
+            <DialogDescription>To enable coin transfers, you first need to set a gift password.</DialogDescription>
+        </DialogHeader>
+        <Alert variant="destructive" className="my-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Action Required to Enable Gifting</AlertTitle>
+            <AlertDescription>
+                To set your gift password, you must first use all of your available coins during a single purchase. Once that order is marked as "Completed" by our admin team, you will be able to set your password here. This is a one-time security verification step to enable this feature.
+            </AlertDescription>
+        </Alert>
+        <DialogFooter>
+            <DialogClose asChild><Button>Got it</Button></DialogClose>
+        </DialogFooter>
+    </>
+  )
+  
 
   const renderModalContent = () => {
     if (!user) return null;
 
-    // Case 1: User has not set a gift password yet
-    if (!user.giftPassword) {
-      // Sub-case 1.1: User is eligible to set the password
-      if (user.canSetGiftPassword) {
-        return (
-          <form action={setPasswordFormAction}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><KeyRound /> Set Your Gift Password</DialogTitle>
-              <DialogDescription>Create a secure password to protect your coin transfers. You will need this password every time you send coins to another player.</DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="gift-password">New Gift Password</Label>
-                <PasswordInput id="gift-password" name="giftPassword" required minLength={6} />
-              </div>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                <SetPasswordSubmitButton />
-            </DialogFooter>
-          </form>
-        );
-      }
-      // Sub-case 1.2: User is NOT yet eligible to set the password
-      return (
-        <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><Shield /> Secure Your Gifting</DialogTitle>
-              <DialogDescription>To enable coin transfers, you first need to set a gift password.</DialogDescription>
-            </DialogHeader>
-            <Alert variant="destructive" className="my-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Action Required</AlertTitle>
-                <AlertDescription>
-                    To unlock the gift password setup, you must first use all of your coins during a single purchase. Once that order is marked as "Completed" by our admin team, you will be able to set your password here. This is a one-time security verification step.
-                </AlertDescription>
-            </Alert>
-            <DialogFooter>
-              <DialogClose asChild><Button>Got it</Button></DialogClose>
-            </DialogFooter>
-        </>
-      );
+    if (view === 'setPassword') {
+        return user.canSetGiftPassword ? renderSetPasswordView() : renderEligibilityCheckView();
     }
-
-    // Case 2: User has a password and wants to transfer coins
-    return (
-      <form action={transferFormAction}>
-        <DialogHeader>
-          <DialogTitle>Transfer Coins</DialogTitle>
-          <DialogDescription>
-            Send coins to another user. This action is irreversible. Your current balance is {user.coins}.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="recipientId">Recipient's Gaming ID</Label>
-            <Input id="recipientId" name="recipientId" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input id="amount" name="amount" type="number" required min="1" max={user.coins} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="transfer-gift-password">Your Gift Password</Label>
-            <PasswordInput id="transfer-gift-password" name="giftPassword" required />
-          </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-          <TransferSubmitButton />
-        </DialogFooter>
-      </form>
-    );
+    
+    if (view === 'transfer') {
+        return user.giftPassword ? renderTransferView() : renderEligibilityCheckView();
+    }
+    
+    return null;
   };
   
   return (

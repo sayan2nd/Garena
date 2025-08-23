@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -393,10 +394,18 @@ export async function setGiftPassword(prevState: FormState, formData: FormData):
             return { success: false, message: 'You are not eligible to set a gift password yet.' };
         }
 
+        const wasPasswordSet = !!user.giftPassword;
         const hashedPassword = await bcrypt.hash(giftPassword, 10);
-        await db.collection<User>('users').updateOne({ gamingId }, { $set: { giftPassword: hashedPassword } });
+        
+        await db.collection<User>('users').updateOne(
+            { gamingId }, 
+            { $set: { giftPassword: hashedPassword, canSetGiftPassword: false } }
+        );
 
         revalidatePath('/');
+        if (wasPasswordSet) {
+            return { success: true, message: 'Gift password reset successfully!' };
+        }
         return { success: true, message: 'Gift password set successfully!' };
     } catch (error) {
         console.error('Error setting gift password:', error);
@@ -751,7 +760,7 @@ export async function updateOrderStatus(orderId: string, status: 'Completed' | '
                     );
                 }
 
-                // Check if user is now eligible to set gift password
+                // Check if user is now eligible to set/reset gift password
                 // Condition: The user must have spent all their coins in this purchase
                 if (order.coinsAtTimeOfPurchase !== undefined && order.coinsUsed === order.coinsAtTimeOfPurchase) {
                    await db.collection<User>('users').updateOne(
