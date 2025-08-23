@@ -104,6 +104,7 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
       <CardContent className="space-y-6">
         {products.map((product) => (
           <form key={product._id} action={(formData) => handleUpdate(product._id, formData)}>
+            <input type="hidden" name="isCoinProduct" value={String(product.isCoinProduct || false)} />
             <Card>
               <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2 lg:col-span-2">
@@ -153,6 +154,7 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                             type="number"
                             step="0.01"
                             defaultValue={product.purchasePrice}
+                            required
                         />
                     </div>
                  )}

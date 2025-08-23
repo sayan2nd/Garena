@@ -991,6 +991,7 @@ const productUpdateSchema = z.object({
     imageUrl: z.string().url('Must be a valid URL.'),
     displayOrder: z.coerce.number().int().min(1, 'Display order must be a positive number.'),
     category: z.string().optional(),
+    isCoinProduct: z.enum(['true', 'false']).optional(),
 });
 
 export async function updateProduct(productId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
@@ -1006,10 +1007,14 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         return { success: false, message: validatedFields.error.errors.map(e => e.message).join(', ') };
     }
 
-    const { name, price, quantity, coinsApplicable, imageUrl, displayOrder, category, purchasePrice } = validatedFields.data;
+    const { name, price, quantity, imageUrl, displayOrder, category, purchasePrice } = validatedFields.data;
     const isAvailable = rawFormData.isAvailable === 'on';
     const endDate = validatedFields.data.endDate ? new Date(validatedFields.data.endDate) : undefined;
+    const isCoinProduct = rawFormData.isCoinProduct === 'true';
 
+    // For coin products, coinsApplicable is 0. For normal products, it comes from the form.
+    const coinsApplicable = isCoinProduct ? 0 : validatedFields.data.coinsApplicable;
+    
 
     const db = await connectToDatabase();
 
@@ -1025,7 +1030,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
 
     await db.collection<Product>('products').updateOne(
         { _id: new ObjectId(productId) },
-        { $set: { name, price, quantity, isAvailable, coinsApplicable, endDate: endDate, imageUrl, displayOrder, category, purchasePrice } }
+        { $set: { name, price, quantity, isAvailable, coinsApplicable, endDate, imageUrl, displayOrder, category, purchasePrice, isCoinProduct } }
     );
     
     revalidatePath('/');
