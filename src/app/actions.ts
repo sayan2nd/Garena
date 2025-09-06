@@ -2,6 +2,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -301,7 +302,10 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
 
     if (user) {
       cookies().set('gaming_id', gamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
-      return { success: true, message: 'Welcome back!', user: JSON.parse(JSON.stringify(user)) };
+      // Record the visit for an existing user
+      await db.collection<User>('users').updateOne({ _id: user._id }, { $push: { visits: new Date() } });
+      const updatedUser = await db.collection<User>('users').findOne({ _id: user._id });
+      return { success: true, message: 'Welcome back!', user: JSON.parse(JSON.stringify(updatedUser)) };
     }
 
     const referralCode = cookies().get('referral_code')?.value;
@@ -312,6 +316,7 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
       createdAt: new Date(),
       referredByCode: referralCode, // Store the referral code
       canSetGiftPassword: false, // Default to not being able to set password
+      visits: [new Date()], // Record the first visit on registration
     };
 
     const result = await db.collection<User>('users').insertOne(newUser as User);
@@ -1268,12 +1273,21 @@ export async function getUsersForAdmin(page: number, sort: string, search: strin
         ]
     }
 
-    const usersFromDb = await db.collection<User>('users')
-        .find(query)
-        .sort({ createdAt: sort === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(PAGE_SIZE)
-        .toArray();
+    let sortOption: any = { createdAt: -1 }; // Default sort by newest
+    if (sort === 'asc') {
+        sortOption = { createdAt: 1 }; // Sort by oldest
+    } else if (sort === 'visits') {
+        sortOption = { 'visitsCount': -1, 'createdAt': -1 }; // Sort by most visits
+    }
+
+
+    const usersFromDb = await db.collection<User>('users').aggregate([
+        { $addFields: { visitsCount: { $size: { $ifNull: [ "$visits", [] ] } } } },
+        { $match: query },
+        { $sort: sortOption },
+        { $skip: skip },
+        { $limit: PAGE_SIZE }
+    ]).toArray();
 
     const totalUsers = await db.collection('users').countDocuments(query);
     const hasMore = skip + usersFromDb.length < totalUsers;

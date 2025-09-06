@@ -26,6 +26,7 @@ export interface User {
     canSetGiftPassword?: boolean; // Flag to check if user can set/reset gift password
     isBanned?: boolean;
     banMessage?: string; // A message to show the user when they are banned
+    visits?: Date[];
 }
 
 
