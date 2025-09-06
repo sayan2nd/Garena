@@ -8,6 +8,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -494,9 +495,20 @@ export async function transferCoins(prevState: FormState, formData: FormData): P
         throw new Error('Recipient not found.');
       }
 
+      // Perform transfers
       await db.collection<User>('users').updateOne({ gamingId: senderGamingId }, { $inc: { coins: -amount } }, { session });
       await db.collection<User>('users').updateOne({ gamingId: recipientId }, { $inc: { coins: amount } }, { session });
       
+      // Create notification for recipient
+      const notificationMessage = `Congratulations! ${senderGamingId} sent you ${amount} ${amount > 1 ? 'coins' : 'coin'}.`;
+      const newNotification: Omit<Notification, '_id'> = {
+        gamingId: recipientId,
+        message: notificationMessage,
+        isRead: false,
+        createdAt: new Date(),
+      };
+      await db.collection<Notification>('notifications').insertOne(newNotification as Notification, { session });
+
       resultMessage = `Successfully transferred ${amount} coins to ${recipientId}.`;
     });
     

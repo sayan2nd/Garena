@@ -14,7 +14,7 @@ export default function PopupNotification({ notification, onClose }: PopupNotifi
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-headline">Important Notice</DialogTitle>
+          <DialogTitle className="text-2xl font-headline">Welcome to Garena Store</DialogTitle>
           <DialogDescription>
             A message from the Garena team.
           </DialogDescription>
