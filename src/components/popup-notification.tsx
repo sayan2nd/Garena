@@ -1,7 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { Notification } from '@/lib/definitions';
 import Image from 'next/image';
 
@@ -28,13 +27,6 @@ export default function PopupNotification({ notification, onClose }: PopupNotifi
                 </div>
             )}
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button onClick={onClose} className="w-full">
-              Close
-            </Button>
-          </DialogClose>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
