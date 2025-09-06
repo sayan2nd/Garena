@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Event } from '@/lib/definitions';
 import Image from 'next/image';
 import { X } from 'lucide-react';
@@ -14,6 +14,9 @@ export default function EventModal({ event, onClose }: EventModalProps) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="p-0 border-0 max-w-2xl bg-transparent shadow-none" hideCloseButton={true}>
+        <DialogHeader>
+            <DialogTitle className="sr-only">Promotional Event</DialogTitle>
+        </DialogHeader>
         <div className="relative aspect-video">
             <Image src={event.imageUrl} alt="Event" layout="fill" className="object-contain" />
         </div>
