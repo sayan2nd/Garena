@@ -97,7 +97,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         return;
     }
 
-    const razorpayOrderResult = await createRazorpayOrder(finalPrice);
+    const razorpayOrderResult = await createRazorpayOrder(finalPrice, user.gamingId);
 
     if (!razorpayOrderResult.success || !razorpayOrderResult.order) {
         toast({ variant: 'destructive', title: 'Payment Error', description: razorpayOrderResult.error || 'Could not create payment order.' });

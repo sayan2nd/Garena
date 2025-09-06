@@ -566,7 +566,7 @@ export async function createRedeemCodeOrder(
 }
 
 // --- Razorpay Actions ---
-export async function createRazorpayOrder(amount: number) {
+export async function createRazorpayOrder(amount: number, gamingId: string) {
     noStore();
     const razorpay = new Razorpay({
         key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
@@ -576,7 +576,10 @@ export async function createRazorpayOrder(amount: number) {
     const options = {
         amount: amount * 100, // amount in the smallest currency unit
         currency: "INR",
-        receipt: `receipt_order_${new Date().getTime()}`
+        receipt: `receipt_order_${new Date().getTime()}`,
+        notes: {
+            gamingId: gamingId,
+        }
     };
     try {
         const order = await razorpay.orders.create(options);
