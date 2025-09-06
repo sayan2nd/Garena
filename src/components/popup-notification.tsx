@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Notification } from '@/lib/definitions';
 import Image from 'next/image';
@@ -13,7 +13,7 @@ interface PopupNotificationProps {
 export default function PopupNotification({ notification, onClose }: PopupNotificationProps) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" hideCloseButton>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-headline">Important Notice</DialogTitle>
           <DialogDescription>
@@ -29,9 +29,11 @@ export default function PopupNotification({ notification, onClose }: PopupNotifi
             )}
         </div>
         <DialogFooter>
-          <Button onClick={onClose} className="w-full">
-            Close
-          </Button>
+          <DialogClose asChild>
+            <Button onClick={onClose} className="w-full">
+              Close
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
