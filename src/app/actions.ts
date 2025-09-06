@@ -4,6 +4,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -316,6 +317,7 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
       referredByCode: referralCode, // Store the referral code
       canSetGiftPassword: false, // Default to not being able to set password
       visits: [new Date()], // Record the first visit on registration
+      isHidden: false,
     };
 
     const result = await db.collection<User>('users').insertOne(newUser as User);
@@ -1273,7 +1275,7 @@ export async function getUsersForAdmin(page: number, sort: string, search: strin
     const db = await connectToDatabase();
     const skip = (page - 1) * PAGE_SIZE;
 
-    let query: any = {};
+    let query: any = { isHidden: { $ne: true } }; // Default to not showing hidden users
      if (search) {
         query.$or = [
             { gamingId: { $regex: search, $options: 'i' } },
@@ -1345,4 +1347,56 @@ export async function unbanUser(userId: string): Promise<{ success: boolean; mes
     return { success: true, message: 'User has been unbanned.' };
 }
 
+export async function hideUser(userId: string): Promise<{ success: boolean; message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+    const db = await connectToDatabase();
     
+    const result = await db.collection<User>('users').updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { isHidden: true } }
+    );
+    
+    if (result.modifiedCount === 0) {
+        return { success: false, message: 'User not found.' };
+    }
+
+    revalidatePath('/admin/users');
+    revalidatePath('/admin/hidden-users');
+    return { success: true, message: 'User has been hidden.' };
+}
+
+export async function unhideUser(userId: string): Promise<{ success: boolean; message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+    const db = await connectToDatabase();
+    
+    const result = await db.collection<User>('users').updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { isHidden: false } }
+    );
+    
+    if (result.modifiedCount === 0) {
+        return { success: false, message: 'User not found.' };
+    }
+
+    revalidatePath('/admin/users');
+    revalidatePath('/admin/hidden-users');
+    return { success: true, message: 'User has been unhidden.' };
+}
+
+export async function getHiddenUsersForAdmin() {
+    noStore();
+    const db = await connectToDatabase();
+    
+    const usersFromDb = await db.collection<User>('users')
+      .find({ isHidden: true })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return JSON.parse(JSON.stringify(usersFromDb));
+}

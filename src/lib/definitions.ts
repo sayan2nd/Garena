@@ -27,6 +27,7 @@ export interface User {
     isBanned?: boolean;
     banMessage?: string; // A message to show the user when they are banned
     visits?: Date[];
+    isHidden?: boolean; // Flag to hide user from admin list
 }
 
 

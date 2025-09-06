@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ArrowUpDown, Loader2, Search, Coins, Eye, ShieldBan, ShieldCheck, History, Users } from 'lucide-react';
-import { banUser, getUsersForAdmin, unbanUser } from '@/app/actions';
+import { ArrowUpDown, Loader2, Search, Coins, Eye, ShieldBan, ShieldCheck, History, Users, EyeOff } from 'lucide-react';
+import { banUser, getUsersForAdmin, unbanUser, hideUser } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -116,6 +116,18 @@ export default function UserList({ initialUsers, initialHasMore }: UserListProps
             }
         });
     };
+    
+    const handleHide = async (userId: string) => {
+        startTransition(async () => {
+            const result = await hideUser(userId);
+            if (result.success) {
+                setUsers(prev => prev.filter(user => user._id.toString() !== userId));
+                toast({ title: 'Success', description: result.message });
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: result.message });
+            }
+        });
+    };
 
     const sortOptions = [
         { value: 'visits', label: 'Most Visits' },
@@ -194,6 +206,27 @@ export default function UserList({ initialUsers, initialHasMore }: UserListProps
                                                 <Eye className="h-4 w-4" />
                                             </Link>
                                         </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" disabled={isPending}>
+                                                    <EyeOff className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will hide the user from this list. You can unhide them from the "Hidden Users" section.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleHide(user._id.toString())}>
+                                                        Confirm Hide
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                         {user.isBanned ? (
                                             <Button variant="secondary" size="icon" onClick={() => handleUnban(user._id.toString())} disabled={isPending}>
                                                 <ShieldCheck className="h-4 w-4" />
