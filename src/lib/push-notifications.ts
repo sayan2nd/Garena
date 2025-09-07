@@ -41,21 +41,28 @@ interface MulticastPushNotificationPayload {
     imageUrl?: string;
 }
 
+// Helper to build the message payload, sending only 'data'
+const buildDataPayload = (payload: { title: string; body: string; imageUrl?: string; }) => {
+    return {
+        data: {
+            title: payload.title,
+            body: payload.body,
+            ...(payload.imageUrl && { image: payload.imageUrl }),
+            // Add the link here so the service worker can use it
+            link: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'
+        }
+    };
+};
+
+
 export async function sendPushNotification(payload: PushNotificationPayload) {
     const messaging = initializeFirebaseAdmin();
+    if (!payload.token) return;
+
     try {
         await messaging.send({
             token: payload.token,
-            notification: {
-                title: payload.title,
-                body: payload.body,
-                imageUrl: payload.imageUrl,
-            },
-            webpush: {
-                fcmOptions: {
-                    link: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'
-                }
-            }
+            ...buildDataPayload(payload)
         });
     } catch (error) {
         console.error(`Failed to send push notification to token ${payload.token}:`, error);
@@ -71,16 +78,7 @@ export async function sendMulticastPushNotification(payload: MulticastPushNotifi
     try {
         await messaging.sendEachForMulticast({
             tokens: payload.tokens,
-            notification: {
-                title: payload.title,
-                body: payload.body,
-                imageUrl: payload.imageUrl,
-            },
-             webpush: {
-                fcmOptions: {
-                    link: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'
-                }
-            }
+            ...buildDataPayload(payload)
         });
     } catch (error) {
         console.error('Error sending multicast push notifications:', error);
