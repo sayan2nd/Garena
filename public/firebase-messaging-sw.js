@@ -1,11 +1,12 @@
-
 // Give the service worker access to Firebase Messaging.
 // Note that you can only use Firebase Messaging here, other Firebase libraries
 // are not available in the service worker.
-import { initializeApp } from 'firebase/app';
-import { getMessaging } from 'firebase/messaging/sw';
-import { onBackgroundMessage } from 'firebase/messaging/sw';
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
+// Initialize the Firebase app in the service worker by passing in
+// your app's Firebase config object.
+// https://firebase.google.com/docs/web/setup#config-object
 const firebaseConfig = {
   projectId: "garena-gears",
   appId: "1:93335858315:web:9ef6be42c3b81a236ab88e",
@@ -16,43 +17,35 @@ const firebaseConfig = {
   messagingSenderId: "93335858315"
 };
 
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
 
-onBackgroundMessage(messaging, (payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+firebase.initializeApp(firebaseConfig);
+
+// Retrieve an instance of Firebase Messaging so that it can handle background
+// messages.
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  // console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
   const notificationTitle = payload.data.title;
   const notificationOptions = {
     body: payload.data.body,
     icon: '/img/garena.png',
     image: payload.data.image,
-    badge: '/img/garena-badge.png',
     data: {
-        url: payload.data.link || '/',
-    },
+      link: payload.data.link
+    }
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
+  const notificationPromise = self.registration.showNotification(notificationTitle, notificationOptions);
+  self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    if (event.notification.data && event.notification.data.link) {
+      clients.openWindow(event.notification.data.link);
+    }
+  });
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  const urlToOpen = event.notification.data.url || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) {
-        let client = clientList[0];
-        for (let i = 0; i < clientList.length; i++) {
-          if (clientList[i].focused) {
-            client = clientList[i];
-          }
-        }
-        return client.focus().then(c => c.navigate(urlToOpen));
-      }
-      return clients.openWindow(urlToOpen);
-    })
-  );
+  // Use event.waitUntil to keep the service worker alive
+  // until the notification is displayed.
+  self.waitUntil(notificationPromise);
 });
