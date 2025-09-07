@@ -1,3 +1,4 @@
+
 'use client';
 
 import './globals.css';
@@ -5,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import LoadingScreen from '@/components/loading-screen';
 import { getEvents, getNotificationsForUser, getUserData, markNotificationAsRead, saveFcmToken } from './actions';
 import type { Event, Notification, User } from '@/lib/definitions';
@@ -29,7 +30,7 @@ export default function RootLayout({
   const [showEventModal, setShowEventModal] = useState(false);
   const { toast } = useToast();
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     const userData = await getUserData();
     setUser(userData);
     
@@ -51,17 +52,24 @@ export default function RootLayout({
       setStandardNotifications(standard);
       setPopupNotifications(popups);
     }
-  };
+  }, []);
+
+  const onUserRegistered = useCallback(async () => {
+    // Re-fetch all data when a user registers
+    setIsLoading(true);
+    await fetchInitialData();
+    setIsLoading(false);
+  }, [fetchInitialData]);
 
 
-  const requestNotificationPermission = async () => {
+  const requestNotificationPermission = useCallback(async () => {
     try {
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         const messaging = getMessaging(app);
         
         // Wait for the service worker to be ready
-        await navigator.service-worker.register('/firebase-messaging-sw.js');
-        const swRegistration = await navigator.service-worker.ready;
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const swRegistration = await navigator.serviceWorker.ready;
         
         const permission = await Notification.requestPermission();
         
@@ -72,11 +80,9 @@ export default function RootLayout({
           });
           if (currentToken) {
             await saveFcmToken(currentToken);
-          } else {
-            console.log('No registration token available. Request permission to generate one.');
+            // Optimistically update user state to avoid re-prompting
+            setUser(prevUser => prevUser ? { ...prevUser, fcmToken: currentToken } : null);
           }
-        } else {
-          console.log('Unable to get permission to notify.');
         }
       }
     } catch (error) {
@@ -87,7 +93,7 @@ export default function RootLayout({
         description: 'Could not set up push notifications.',
       });
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchInitialData();
@@ -104,10 +110,12 @@ export default function RootLayout({
             // When a foreground message is received, simply re-fetch notifications
             // to update the bell, but don't show a system notification.
             fetchInitialData();
-            toast({
-              title: payload.notification?.title,
-              description: payload.notification?.body,
-            });
+            if (payload.notification) {
+                 toast({
+                    title: payload.notification.title,
+                    description: payload.notification.body,
+                });
+            }
         });
         return () => unsubscribe(); // Unsubscribe on cleanup
     }
@@ -120,8 +128,7 @@ export default function RootLayout({
     if (user && !user.fcmToken) {
       requestNotificationPermission();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, requestNotificationPermission]);
 
 
   const handlePopupClose = async (notificationId: string) => {
@@ -139,6 +146,15 @@ export default function RootLayout({
     }
   };
 
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      // This is a bit of a hack to pass props to the page component
+      // A better solution would involve a shared context (like React Context API)
+      return React.cloneElement(child as React.ReactElement<any>, { onUserRegistered });
+    }
+    return child;
+  });
+
   return (
     <html lang="en" className="h-full">
       <head>
@@ -153,7 +169,7 @@ export default function RootLayout({
           {isLoading && <LoadingScreen />}
           <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1')}>
             <Header user={user} notifications={standardNotifications} />
-            <main className="flex-grow">{children}</main>
+            <main className="flex-grow">{childrenWithProps}</main>
             <Footer />
           </div>
           <Toaster />
