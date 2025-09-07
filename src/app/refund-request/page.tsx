@@ -14,7 +14,7 @@ export default function RefundRequestPage() {
   const isMobile = useIsMobile();
 
   const handleSendEmail = () => {
-    const recipient = 'support@garenagears.com';
+    const recipient = 'garenaffmaxstore@gmail.com';
     const subject = `Refund Request - UTR/Code: ${transactionId}`;
     const body = `
 UTR/Transaction ID or Redeem Code:

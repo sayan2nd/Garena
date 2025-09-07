@@ -11,6 +11,7 @@ import { registerGamingId } from '@/app/actions';
 import { Loader2, ShieldAlert, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GamingIdModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
   const [bannedInfo, setBannedInfo] = useState<{ message: string } | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
 
   const handleRegister = async () => {
@@ -57,7 +59,7 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
   };
   
   const handleUnbanRequest = () => {
-    const recipient = 'sm187966@gmail.com';
+    const recipient = 'garenaffmaxstore@gmail.com';
     const subject = `Unban Request - Gaming ID: ${gamingId}`;
     const body = `
 Dear Garena Support,
@@ -71,8 +73,13 @@ Reason for request:
 
 Thank you for your consideration.
     `;
-    const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoLink;
+    if (isMobile) {
+      const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+    } else {
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.open(gmailUrl, '_blank');
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
