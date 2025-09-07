@@ -1,3 +1,4 @@
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1477,7 +1478,7 @@ export async function sendNotification(formData: FormData): Promise<{ success: b
     if (user.fcmToken) {
        await sendPushNotification({
             token: user.fcmToken,
-            title: 'Garena Gears',
+            title: 'Garena Store',
             body: message,
             imageUrl: imageUrl || undefined,
         });
@@ -1532,7 +1533,7 @@ export async function sendNotificationToAll(formData: FormData): Promise<{ succe
     if (tokens.length > 0) {
         await sendMulticastPushNotification({
             tokens,
-            title: 'Garena Gears',
+            title: 'Garena Store',
             body: message,
             imageUrl: imageUrl || undefined,
         });
@@ -1732,3 +1733,5 @@ export async function deleteAiLog(logId: string): Promise<{ success: boolean; me
         return { success: false, message: 'An unexpected error occurred.' };
     }
 }
+
+    

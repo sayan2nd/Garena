@@ -110,7 +110,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: "Garena",
+        name: "Garena Store",
         description: `Order for ${product.name}`,
         image: "https://freefire-max-garena.vercel.app/img/garena.png",
         order_id: razorpayOrder.id,
@@ -330,5 +330,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     </>
   );
 }
+
+    
 
     
