@@ -1,3 +1,4 @@
+
 import UserList from './_components/user-list';
 import { getUsersForAdmin } from '@/app/actions';
 
@@ -10,12 +11,13 @@ export default async function AdminUsersPage({
   const sort = typeof searchParams.sort === 'string' ? searchParams.sort : 'visits'; // Default to visits
   const search = typeof searchParams.search === 'string' ? searchParams.search : '';
 
-  const { users, hasMore } = await getUsersForAdmin(page, sort, search);
+  const { users, hasMore, totalUsers } = await getUsersForAdmin(page, sort, search);
 
   return (
     <UserList
       initialUsers={JSON.parse(JSON.stringify(users))}
       initialHasMore={hasMore}
+      totalUsers={totalUsers}
     />
   );
 }

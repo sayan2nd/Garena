@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils';
 interface UserListProps {
     initialUsers: User[];
     initialHasMore: boolean;
+    totalUsers?: number;
 }
 
 const FormattedDate = ({ dateString }: { dateString: string }) => {
@@ -39,7 +41,7 @@ const FormattedDate = ({ dateString }: { dateString: string }) => {
     });
 }
 
-export default function UserList({ initialUsers, initialHasMore }: UserListProps) {
+export default function UserList({ initialUsers, initialHasMore, totalUsers }: UserListProps) {
     const [users, setUsers] = useState<User[]>(initialUsers);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(initialHasMore);
@@ -142,7 +144,12 @@ export default function UserList({ initialUsers, initialHasMore }: UserListProps
             <Card>
                 <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <CardTitle>User Management</CardTitle>
+                        <div className="flex items-center gap-2">
+                           <CardTitle>User Management</CardTitle>
+                            {totalUsers !== undefined && (
+                                <Badge variant="secondary" className="text-sm">{totalUsers}</Badge>
+                            )}
+                        </div>
                         <div className="flex items-center gap-2">
                              <form onSubmit={handleSearch} className="flex items-center gap-2">
                                 <Input name="search" placeholder="Search Gaming/Referral ID..." defaultValue={searchParams.get('search') || ''} className="w-56"/>

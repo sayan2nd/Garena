@@ -14,6 +14,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1335,7 +1336,7 @@ export async function getUsersForAdmin(page: number, sort: string, search: strin
     
     const users = JSON.parse(JSON.stringify(usersFromDb));
 
-    return { users, hasMore };
+    return { users, hasMore, totalUsers };
 }
 
 export async function banUser(userId: string, banMessage: string): Promise<{ success: boolean; message: string }> {
