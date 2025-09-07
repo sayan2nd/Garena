@@ -2,21 +2,23 @@
 
 'use client';
 
-import { useState, useEffect, useActionState } from 'react';
+import { useState, useEffect, useActionState, useTransition } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from './ui/card';
-import { Coins, Tv, Shield, KeyRound, Loader2, Send, AlertCircle, RefreshCw } from 'lucide-react';
-import type { User } from '@/lib/definitions';
+import { Coins, Tv, Shield, KeyRound, Loader2, Send, AlertCircle, RefreshCw, History } from 'lucide-react';
+import type { User, Notification as GiftHistoryItem } from '@/lib/definitions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { transferCoins, setGiftPassword } from '@/app/actions';
+import { transferCoins, setGiftPassword, getGiftHistoryForUser } from '@/app/actions';
 import { useFormStatus } from 'react-dom';
 import GamingIdModal from './gaming-id-modal';
 import { Button } from './ui/button';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { PasswordInput } from '@/app/account/_components/password-input';
+import { ScrollArea } from './ui/scroll-area';
+
 
 interface CoinSystemProps {
   user: User | null;
@@ -25,7 +27,7 @@ interface CoinSystemProps {
 function TransferSubmitButton() {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="gap-2">
             {pending ? <Loader2 className="animate-spin" /> : <Send />}
             {pending ? 'Sending...' : 'Send Coins'}
         </Button>
@@ -41,6 +43,25 @@ function SetPasswordSubmitButton() {
     );
 }
 
+const GiftHistoryFormattedDate = ({ dateString }: { dateString: string }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    if (!mounted) {
+        return null;
+    }
+    const date = new Date(dateString);
+    return date.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+    });
+}
+
+
 const initialState = { success: false, message: '' };
 
 type View = 'transfer' | 'setPassword';
@@ -49,6 +70,9 @@ export default function CoinSystem({ user }: CoinSystemProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [hasModalBeenDismissed, setHasModalBeenDismissed] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<GiftHistoryItem[]>([]);
+  const [isHistoryLoading, startHistoryTransition] = useTransition();
   const [view, setView] = useState<View>('transfer');
   const { toast } = useToast();
 
@@ -110,6 +134,14 @@ export default function CoinSystem({ user }: CoinSystemProps) {
     }
   };
   
+  const handleShowHistory = () => {
+    startHistoryTransition(async () => {
+        const history = await getGiftHistoryForUser();
+        setHistoryItems(history);
+        setIsHistoryOpen(true);
+    });
+  };
+
   const renderSetPasswordView = () => (
      <form action={setPasswordFormAction}>
         <DialogHeader>
@@ -151,14 +183,18 @@ export default function CoinSystem({ user }: CoinSystemProps) {
                 <PasswordInput id="transfer-gift-password" name="giftPassword" required />
             </div>
         </div>
-        <DialogFooter className="sm:justify-between">
-            {user?.canSetGiftPassword ? (
-                <Button variant="outline" onClick={() => setView('setPassword')}>
-                    <RefreshCw className="mr-2 h-4 w-4" /> Reset Password
+        <DialogFooter className="flex-wrap !justify-between gap-2">
+            <div className="flex items-center gap-2">
+                <Button variant="outline" type="button" onClick={handleShowHistory} disabled={isHistoryLoading} className="gap-2">
+                    {isHistoryLoading ? <Loader2 className="animate-spin"/> : <History/>}
+                    History
                 </Button>
-            ) : (
-                <p className="text-xs text-muted-foreground text-left flex-1">To reset password, use all your coins on a verified purchase.</p>
-            )}
+                {user?.canSetGiftPassword && (
+                    <Button variant="outline" type="button" onClick={() => setView('setPassword')} className="gap-2">
+                        <RefreshCw /> Reset Password
+                    </Button>
+                 )}
+            </div>
             <div className="flex gap-2 justify-end">
                 <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
                 <TransferSubmitButton />
@@ -204,6 +240,38 @@ export default function CoinSystem({ user }: CoinSystemProps) {
   return (
     <>
       <GamingIdModal isOpen={isRegisterModalOpen} onOpenChange={handleModalOpenChange} />
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle>Your Gift History</DialogTitle>
+                <DialogDescription>A record of all the coins you've sent.</DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-96">
+                <div className="space-y-3 pr-4 py-2">
+                    {historyItems.length > 0 ? historyItems.map(item => {
+                        // Extract amount and recipient from message
+                        const match = item.message.match(/sent you (\d+) coin/);
+                        const amount = match ? parseInt(match[1], 10) : 0;
+                        return (
+                            <div key={item._id.toString()} className="flex justify-between items-center text-sm p-3 rounded-md bg-muted/50">
+                                <div>
+                                    <p className="font-medium font-sans">Sent to: <span className="font-mono">{item.gamingId}</span></p>
+                                    <p className="text-xs text-muted-foreground">
+                                        <GiftHistoryFormattedDate dateString={item.createdAt as unknown as string} />
+                                    </p>
+                                </div>
+                                <div className="font-bold font-sans text-right text-amber-500 flex items-center gap-1">
+                                    {amount} <Coins className="w-4 h-4"/>
+                                </div>
+                            </div>
+                        )
+                    }) : (
+                        <p className="text-sm text-muted-foreground text-center py-8">You haven't sent any gifts yet.</p>
+                    )}
+                </div>
+            </ScrollArea>
+        </DialogContent>
+      </Dialog>
       <section className="w-full py-6 bg-muted/40 border-b">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex justify-center items-stretch gap-4">

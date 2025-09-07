@@ -15,6 +15,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -511,6 +512,7 @@ export async function transferCoins(prevState: FormState, formData: FormData): P
       const notificationMessage = `Congratulations! ${senderGamingId} sent you ${amount} ${amount > 1 ? 'coins' : 'coin'}.`;
       const newNotification: Omit<Notification, '_id'> = {
         gamingId: recipientId,
+        senderGamingId: senderGamingId, // Track the sender
         message: notificationMessage,
         isRead: false,
         createdAt: new Date(),
@@ -1561,6 +1563,24 @@ export async function getNotificationsForUser(): Promise<Notification[]> {
     
     return JSON.parse(JSON.stringify(notifications));
 }
+
+export async function getGiftHistoryForUser(): Promise<Notification[]> {
+    noStore();
+    const gamingId = cookies().get('gaming_id')?.value;
+    if (!gamingId) {
+        return [];
+    }
+    
+    const db = await connectToDatabase();
+    // Fetch notifications where the current user was the sender
+    const notifications = await db.collection<Notification>('notifications')
+        .find({ senderGamingId: gamingId })
+        .sort({ createdAt: -1 })
+        .toArray();
+    
+    return JSON.parse(JSON.stringify(notifications));
+}
+
 
 export async function markNotificationAsRead(notificationId: string): Promise<{ success: boolean }> {
     const gamingId = cookies().get('gaming_id')?.value;

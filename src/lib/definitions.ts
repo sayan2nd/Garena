@@ -90,7 +90,8 @@ export interface Withdrawal {
 
 export interface Notification {
     _id: ObjectId;
-    gamingId: string;
+    gamingId: string; // The recipient's gaming ID
+    senderGamingId?: string; // The sender's gaming ID, for gift history
     message: string;
     imageUrl?: string;
     isRead: boolean;
