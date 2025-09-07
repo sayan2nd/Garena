@@ -11,8 +11,7 @@ import { getEvents, getNotificationsForUser, getUserData, markNotificationAsRead
 import type { Event, Notification, User } from '@/lib/definitions';
 import PopupNotification from '@/components/popup-notification';
 import EventModal from '@/components/event-modal';
-import FirebaseMessagingProvider from '@/components/firebase-messaging-provider';
-import { getMessaging, getToken } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { app } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,14 +29,39 @@ export default function RootLayout({
   const [showEventModal, setShowEventModal] = useState(false);
   const { toast } = useToast();
 
+  const fetchInitialData = async () => {
+    const userData = await getUserData();
+    setUser(userData);
+    
+    const allEvents = await getEvents();
+    const eventsSeen = sessionStorage.getItem('eventsSeen');
+
+    if (!eventsSeen) {
+      setEvents(allEvents);
+      if(allEvents.length > 0) {
+          setShowEventModal(true);
+      }
+    }
+
+    if (userData) {
+      const allNotifications = await getNotificationsForUser();
+      const standard = allNotifications.filter(n => !n.isPopup);
+      const popups = allNotifications.filter(n => n.isPopup && !n.isRead);
+
+      setStandardNotifications(standard);
+      setPopupNotifications(popups);
+    }
+  };
+
+
   const requestNotificationPermission = async () => {
     try {
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         const messaging = getMessaging(app);
         
         // Wait for the service worker to be ready
-        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        const swRegistration = await navigator.serviceWorker.ready;
+        await navigator.service-worker.register('/firebase-messaging-sw.js');
+        const swRegistration = await navigator.service-worker.ready;
         
         const permission = await Notification.requestPermission();
         
@@ -66,43 +90,34 @@ export default function RootLayout({
   };
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      const userData = await getUserData();
-      setUser(userData);
-      
-      const allEvents = await getEvents();
-      const eventsSeen = sessionStorage.getItem('eventsSeen');
-
-      if (!eventsSeen) {
-        setEvents(allEvents);
-        if(allEvents.length > 0) {
-            setShowEventModal(true);
-        }
-      }
-
-      if (userData) {
-        const allNotifications = await getNotificationsForUser();
-        const standard = allNotifications.filter(n => !n.isPopup);
-        const popups = allNotifications.filter(n => n.isPopup && !n.isRead);
-
-        setStandardNotifications(standard);
-        setPopupNotifications(popups);
-      }
-    };
-
     fetchInitialData();
 
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000); 
 
+    // Set up foreground message listener
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        const messaging = getMessaging(app);
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log('Foreground message received.', payload);
+            // When a foreground message is received, simply re-fetch notifications
+            // to update the bell, but don't show a system notification.
+            fetchInitialData();
+            toast({
+              title: payload.notification?.title,
+              description: payload.notification?.body,
+            });
+        });
+        return () => unsubscribe(); // Unsubscribe on cleanup
+    }
+
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    // This effect runs when the user data is loaded
     if (user && !user.fcmToken) {
-      // If user is logged in but doesn't have a token, ask for permission
       requestNotificationPermission();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,7 +150,6 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={cn('font-body antialiased flex flex-col min-h-screen')}>
-        <FirebaseMessagingProvider>
           {isLoading && <LoadingScreen />}
           <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1')}>
             <Header user={user} notifications={standardNotifications} />
@@ -152,7 +166,6 @@ export default function RootLayout({
           {showEventModal && events.length > 0 && (
               <EventModal event={events[currentEventIndex]} onClose={handleEventClose} />
           )}
-        </FirebaseMessagingProvider>
       </body>
     </html>
   );
