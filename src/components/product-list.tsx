@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import ProductCard from '@/components/product-card';
-import type { Product, User, Order } from '@/lib/definitions';
+import type { Product, User, Order, UserProductControl } from '@/lib/definitions';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
@@ -14,9 +14,10 @@ interface ProductListProps {
     initialProducts: (Product & { _id: string | ObjectId })[];
     user: User | null;
     orders: Order[];
+    controls: UserProductControl[];
 }
 
-export default function ProductList({ initialProducts, user, orders }: ProductListProps) {
+export default function ProductList({ initialProducts, user, orders, controls }: ProductListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -95,16 +96,23 @@ export default function ProductList({ initialProducts, user, orders }: ProductLi
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
           {filteredAndSortedProducts.map((product) => {
-             const hasPurchased = !!user && orders.some(order => 
+            const completedOrdersForProduct = orders.filter(order => 
                 order.productId === product._id.toString() && 
-                (order.status === 'Completed' || order.status === 'Processing')
+                order.status === 'Completed'
             );
+            const hasPurchased = completedOrdersForProduct.length > 0;
+            const control = controls.find(c => c.productId === product._id.toString());
+            
+            const allowance = control?.type === 'allowPurchase' ? control.allowanceCount || 0 : 0;
+            const canPurchaseAgain = hasPurchased && (completedOrdersForProduct.length < (1 + allowance));
+             
             return (
                 <ProductCard
-                key={product._id.toString()}
-                product={{...product, _id: product._id.toString()}}
-                user={user}
-                hasPurchased={hasPurchased}
+                  key={product._id.toString()}
+                  product={{...product, _id: product._id.toString()}}
+                  user={user}
+                  hasPurchased={canPurchaseAgain ? false : hasPurchased}
+                  control={control}
                 />
             )
           })}

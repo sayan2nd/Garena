@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification, type Event, type AiLog } from '@/lib/definitions';
+import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification, type Event, type AiLog, type UserProductControl } from '@/lib/definitions';
 import { randomBytes, createHmac } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -1061,11 +1061,11 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
 }
 
 // --- Product Management Actions ---
-export async function getProducts() {
+export async function getProducts(query?: any) {
     noStore();
     const db = await connectToDatabase();
     const productsFromDb = await db.collection<Product>('products')
-      .find({ isVanished: { $ne: true } })
+      .find(query || { isVanished: { $ne: true } })
       .sort({ displayOrder: 1 })
       .toArray();
 
@@ -1734,4 +1734,128 @@ export async function deleteAiLog(logId: string): Promise<{ success: boolean; me
     }
 }
 
+// --- User-Product Control Actions ---
+export async function findUserAndProductsForControl(gamingId: string): Promise<{ success: boolean, message?: string, user?: User, products?: Product[] }> {
+    noStore();
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) return { success: false, message: "Unauthorized" };
+
+    try {
+        const db = await connectToDatabase();
+        const user = await db.collection<User>('users').findOne({ gamingId });
+        if (!user) {
+            return { success: false, message: "User not found." };
+        }
+        const products = await getProducts({ isVanished: { $ne: true } });
+        return { success: true, user: JSON.parse(JSON.stringify(user)), products: JSON.parse(JSON.stringify(products)) };
+    } catch (error) {
+        console.error("Error finding user/products for control:", error);
+        return { success: false, message: "An error occurred." };
+    }
+}
+
+const controlRuleSchema = z.object({
+    gamingId: z.string(),
+    productId: z.string(),
+    type: z.enum(['block', 'allowPurchase']),
+    reason: z.string().optional(),
+    allowance: z.coerce.number().optional()
+});
+
+export async function setControlRule(formData: FormData): Promise<{ success: boolean, message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) return { success: false, message: "Unauthorized" };
+
+    const rawData = Object.fromEntries(formData);
+    const validated = controlRuleSchema.safeParse(rawData);
+
+    if (!validated.success) {
+        return { success: false, message: "Invalid data provided." };
+    }
+
+    const { gamingId, productId, type, reason, allowance } = validated.data;
     
+    try {
+        const db = await connectToDatabase();
+        const product = await db.collection<Product>('products').findOne({ _id: new ObjectId(productId) });
+        if (!product) {
+            return { success: false, message: 'Product not found.' };
+        }
+
+        let newRule: Omit<UserProductControl, '_id'> = {
+            gamingId,
+            productId,
+            productName: product.name,
+            type,
+            createdAt: new Date()
+        };
+
+        if (type === 'block') {
+            if (!reason) return { success: false, message: 'A reason is required to block a purchase.' };
+            newRule.blockReason = reason;
+        } else if (type === 'allowPurchase') {
+            if (!allowance || allowance <= 0) return { success: false, message: 'A positive allowance count is required.' };
+            newRule.allowanceCount = allowance;
+        }
+
+        await db.collection<UserProductControl>('user_product_controls').replaceOne(
+            { gamingId, productId },
+            newRule as UserProductControl,
+            { upsert: true }
+        );
+
+        revalidatePath('/admin/user-product-controls');
+        return { success: true, message: 'Rule set successfully.' };
+
+    } catch (error) {
+        console.error("Error setting control rule:", error);
+        return { success: false, message: 'An error occurred.' };
+    }
+}
+
+export async function getActiveControlRules(): Promise<UserProductControl[]> {
+    noStore();
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) return [];
+    
+    try {
+        const db = await connectToDatabase();
+        const rules = await db.collection<UserProductControl>('user_product_controls').find().sort({ createdAt: -1 }).toArray();
+        return JSON.parse(JSON.stringify(rules));
+    } catch (error) {
+        console.error("Error fetching control rules:", error);
+        return [];
+    }
+}
+
+export async function deleteControlRule(ruleId: string): Promise<{ success: boolean, message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) return { success: false, message: 'Unauthorized' };
+    
+    try {
+        const db = await connectToDatabase();
+        const result = await db.collection<UserProductControl>('user_product_controls').deleteOne({ _id: new ObjectId(ruleId) });
+        if (result.deletedCount === 0) {
+            return { success: false, message: 'Rule not found.' };
+        }
+        revalidatePath('/admin/user-product-controls');
+        return { success: true, message: 'Rule removed successfully.' };
+    } catch (error) {
+        console.error("Error deleting control rule:", error);
+        return { success: false, message: 'An error occurred.' };
+    }
+}
+
+export async function getUserProductControls(gamingId: string): Promise<UserProductControl[]> {
+    noStore();
+    if (!gamingId) return [];
+
+    try {
+        const db = await connectToDatabase();
+        const controls = await db.collection<UserProductControl>('user_product_controls').find({ gamingId }).toArray();
+        return JSON.parse(JSON.stringify(controls));
+    } catch (error) {
+        console.error("Failed to fetch user product controls:", error);
+        return [];
+    }
+}

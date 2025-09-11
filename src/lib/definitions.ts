@@ -112,3 +112,14 @@ export interface AiLog {
     answer: string;
     createdAt: Date;
 }
+
+export interface UserProductControl {
+    _id: ObjectId;
+    gamingId: string;
+    productId: string;
+    productName: string;
+    type: 'block' | 'allowPurchase';
+    blockReason?: string; // For 'block' type
+    allowanceCount?: number; // For 'allowPurchase' type
+    createdAt: Date;
+}

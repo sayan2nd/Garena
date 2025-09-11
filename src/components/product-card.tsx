@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import PurchaseModal from './purchase-modal';
-import type { Product, User, Order } from '@/lib/definitions';
+import type { Product, User, UserProductControl } from '@/lib/definitions';
 import { Ban, Coins, Timer, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ interface ProductCardProps {
   product: Product & { _id: string | ObjectId }; // Allow string for serialized product
   user: User | null;
   hasPurchased: boolean;
+  control: UserProductControl | undefined;
 }
 
 const CountdownTimer = ({ endDate }: { endDate: Date }) => {
@@ -90,7 +91,7 @@ const CountdownTimer = ({ endDate }: { endDate: Date }) => {
 };
 
 
-export default function ProductCard({ product, user, hasPurchased }: ProductCardProps) {
+export default function ProductCard({ product, user, hasPurchased, control }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
@@ -114,6 +115,35 @@ export default function ProductCard({ product, user, hasPurchased }: ProductCard
   // Ensure product has a string ID for the PurchaseModal
   const productWithStrId = { ...product, _id: product._id.toString() };
 
+  const isBlockedByControl = control?.type === 'block';
+  const isPurchaseAllowedByControl = control?.type === 'allowPurchase';
+  const isOneTimeBuyAndPurchased = product.oneTimeBuy && hasPurchased;
+  
+  // Final purchase check
+  const canPurchase = isPurchaseAllowedByControl ? true : !isOneTimeBuyAndPurchased;
+  
+  // Determine buy button state
+  const getBuyButton = () => {
+    if (!product.isAvailable) {
+      return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />Item Unavailable</Button>;
+    }
+    if (isBlockedByControl) {
+      return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />{control.blockReason}</Button>;
+    }
+    if (!canPurchase) {
+       return <Button className="w-full font-bold text-base" disabled variant="secondary"><CheckCircle2 className="mr-2 h-4 w-4" />Already Purchased</Button>;
+    }
+
+    return (
+        <Button 
+          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105 font-sans relative overflow-hidden animate-glowing-ray"
+          onClick={handleBuyClick}
+        >
+          Buy {product.price && <span className="line-through ml-2 text-accent-foreground/80">₹{product.price}</span>} <span className="ml-1">₹{finalPrice}</span>
+        </Button>
+    );
+  }
+
   return (
     <>
       <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -136,24 +166,7 @@ export default function ProductCard({ product, user, hasPurchased }: ProductCard
           )}
         </CardContent>
         <CardFooter className="p-4 pt-0">
-          {!product.isAvailable ? (
-            <Button className="w-full font-bold text-base" disabled variant="secondary">
-              <Ban className="mr-2 h-4 w-4" />
-              Item Unavailable
-            </Button>
-          ) : hasPurchased && product.oneTimeBuy ? (
-            <Button className="w-full font-bold text-base" disabled variant="secondary">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Already Purchased
-            </Button>
-          ) : (
-            <Button 
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105 font-sans relative overflow-hidden animate-glowing-ray"
-              onClick={handleBuyClick}
-            >
-              Buy {product.price && <span className="line-through ml-2 text-accent-foreground/80">₹{product.price}</span>} <span className="ml-1">₹{finalPrice}</span>
-            </Button>
-          )}
+          {getBuyButton()}
         </CardFooter>
       </Card>
       {isModalOpen && <PurchaseModal product={productWithStrId} user={user} onClose={() => setIsModalOpen(false)} />}
