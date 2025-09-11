@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Search, Trash2 } from 'lucide-react';
+import { Loader2, Search, Trash2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findUserAndProductsForControl, setControlRule, deleteControlRule } from '@/app/actions';
 import type { User, Product, UserProductControl } from '@/lib/definitions';
@@ -28,10 +28,11 @@ export default function UserProductControlManager({ initialRules }: UserProductC
     const [products, setProducts] = useState<Product[]>([]);
     const [selectedProduct, setSelectedProduct] = useState('');
 
-    const [ruleType, setRuleType] = useState<'block' | 'allowPurchase' | 'hideProduct'>('block');
+    const [ruleType, setRuleType] = useState<'block' | 'allowPurchase' | 'hideProduct' | 'limitPurchase'>('block');
     const [reason, setReason] = useState('');
     const [customReason, setCustomReason] = useState('');
     const [allowance, setAllowance] = useState(1);
+    const [limit, setLimit] = useState(1);
 
     const presetReasons = ["Already purchased", "Item unavailable", "It's not for you", "You are blocked from buying this"];
     
@@ -73,6 +74,8 @@ export default function UserProductControlManager({ initialRules }: UserProductC
             formData.append('reason', finalReason);
         } else if (ruleType === 'allowPurchase') {
             formData.append('allowance', String(allowance));
+        } else if (ruleType === 'limitPurchase') {
+            formData.append('limit', String(limit));
         }
 
         startSubmitTransition(async () => {
@@ -104,7 +107,9 @@ export default function UserProductControlManager({ initialRules }: UserProductC
             case 'block':
                 return `Blocked (${rule.blockReason})`;
             case 'allowPurchase':
-                return `Allowance (${rule.allowanceCount} purchases)`;
+                return `Allowance (${rule.allowanceCount} extra purchases)`;
+            case 'limitPurchase':
+                return `Limit (${rule.limitCount} total purchases)`;
             case 'hideProduct':
                 return 'Product Hidden';
             default:
@@ -117,7 +122,7 @@ export default function UserProductControlManager({ initialRules }: UserProductC
             <Card>
                 <CardHeader>
                     <CardTitle>Set New User-Product Rule</CardTitle>
-                    <CardDescription>Block a user from purchasing a specific product or override a one-time purchase limit.</CardDescription>
+                    <CardDescription>Control user access to products, override one-time limits, or set purchase caps.</CardDescription>
                 </CardHeader>
                 <form action={handleSubmitRule}>
                     <CardContent className="space-y-4">
@@ -152,6 +157,7 @@ export default function UserProductControlManager({ initialRules }: UserProductC
                                         <SelectTrigger><SelectValue/></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="block">Block Purchase</SelectItem>
+                                            <SelectItem value="limitPurchase">Set Purchase Limit</SelectItem>
                                             <SelectItem value="allowPurchase">Override One-Time-Buy</SelectItem>
                                             <SelectItem value="hideProduct">Hide Product</SelectItem>
                                         </SelectContent>
@@ -178,8 +184,18 @@ export default function UserProductControlManager({ initialRules }: UserProductC
                                     <div className="space-y-2">
                                         <Label>Number of Extra Purchases to Allow</Label>
                                         <Input type="number" min="1" value={allowance} onChange={e => setAllowance(Number(e.target.value))}/>
+                                        <p className="text-xs text-muted-foreground">This applies to products marked as "1 Time Buy".</p>
                                     </div>
                                 )}
+                                
+                                {ruleType === 'limitPurchase' && (
+                                    <div className="space-y-2">
+                                        <Label>Total Purchase Limit</Label>
+                                        <Input type="number" min="1" value={limit} onChange={e => setLimit(Number(e.target.value))}/>
+                                        <p className="text-xs text-muted-foreground">Set the maximum number of times this user can buy this item.</p>
+                                    </div>
+                                )}
+
                            </div>
                         )}
                     </CardContent>

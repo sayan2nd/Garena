@@ -106,22 +106,18 @@ export default function ProductList({ initialProducts, user, orders, controls }:
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
           {filteredAndSortedProducts.map((product) => {
-            const completedOrdersForProduct = orders.filter(order => 
-                order.productId === product._id.toString() && 
-                order.status === 'Completed'
-            );
-            const hasPurchased = completedOrdersForProduct.length > 0;
+            const productOrders = orders.filter(order => order.productId === product._id.toString());
+            const hasPendingOrder = productOrders.some(o => o.status === 'Processing');
+            const completedPurchases = productOrders.filter(o => o.status === 'Completed').length;
             const control = controls.find(c => c.productId === product._id.toString());
-            
-            const allowance = control?.type === 'allowPurchase' ? control.allowanceCount || 0 : 0;
-            const canPurchaseAgain = hasPurchased && (completedOrdersForProduct.length < (1 + allowance));
-             
+
             return (
                 <ProductCard
                   key={product._id.toString()}
                   product={{...product, _id: product._id.toString()}}
                   user={user}
-                  hasPurchased={canPurchaseAgain ? false : hasPurchased}
+                  hasPendingOrder={hasPendingOrder}
+                  completedPurchases={completedPurchases}
                   control={control}
                 />
             )

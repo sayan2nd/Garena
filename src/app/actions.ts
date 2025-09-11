@@ -2,6 +2,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1827,9 +1828,10 @@ export async function findUserAndProductsForControl(gamingId: string): Promise<{
 const controlRuleSchema = z.object({
     gamingId: z.string(),
     productId: z.string(),
-    type: z.enum(['block', 'allowPurchase', 'hideProduct']),
+    type: z.enum(['block', 'allowPurchase', 'hideProduct', 'limitPurchase']),
     reason: z.string().optional(),
-    allowance: z.coerce.number().optional()
+    allowance: z.coerce.number().optional(),
+    limit: z.coerce.number().optional()
 });
 
 export async function setControlRule(formData: FormData): Promise<{ success: boolean, message: string }> {
@@ -1843,7 +1845,7 @@ export async function setControlRule(formData: FormData): Promise<{ success: boo
         return { success: false, message: "Invalid data provided." };
     }
 
-    const { gamingId, productId, type, reason, allowance } = validated.data;
+    const { gamingId, productId, type, reason, allowance, limit } = validated.data;
     
     try {
         const db = await connectToDatabase();
@@ -1866,6 +1868,9 @@ export async function setControlRule(formData: FormData): Promise<{ success: boo
         } else if (type === 'allowPurchase') {
             if (!allowance || allowance <= 0) return { success: false, message: 'A positive allowance count is required.' };
             newRule.allowanceCount = allowance;
+        } else if (type === 'limitPurchase') {
+            if (!limit || limit <= 0) return { success: false, message: 'A positive limit count is required.' };
+            newRule.limitCount = limit;
         }
 
         await db.collection<UserProductControl>('user_product_controls').replaceOne(
@@ -1930,6 +1935,7 @@ export async function getUserProductControls(gamingId: string): Promise<UserProd
         return [];
     }
 }
+
 
 
 

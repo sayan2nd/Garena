@@ -120,8 +120,9 @@ export interface UserProductControl {
     gamingId: string;
     productId: string;
     productName: string;
-    type: 'block' | 'allowPurchase' | 'hideProduct';
+    type: 'block' | 'allowPurchase' | 'hideProduct' | 'limitPurchase';
     blockReason?: string; // For 'block' type
     allowanceCount?: number; // For 'allowPurchase' type
+    limitCount?: number; // For 'limitPurchase' type
     createdAt: Date;
 }

@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import Image from 'next/image';
@@ -15,16 +16,17 @@ import {
 import { useState, useEffect } from 'react';
 import PurchaseModal from './purchase-modal';
 import type { Product, User, UserProductControl } from '@/lib/definitions';
-import { Ban, Coins, Timer, CheckCircle2 } from 'lucide-react';
+import { Ban, Coins, Timer, CheckCircle2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { type ObjectId } from 'mongodb';
 
 
 interface ProductCardProps {
-  product: Product & { _id: string | ObjectId }; // Allow string for serialized product
+  product: Product & { _id: string | ObjectId };
   user: User | null;
-  hasPurchased: boolean;
+  hasPendingOrder: boolean;
+  completedPurchases: number;
   control: UserProductControl | undefined;
 }
 
@@ -92,7 +94,7 @@ const CountdownTimer = ({ endDate }: { endDate: Date }) => {
 };
 
 
-export default function ProductCard({ product, user, hasPurchased, control }: ProductCardProps) {
+export default function ProductCard({ product, user, hasPendingOrder, completedPurchases, control }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
@@ -107,23 +109,13 @@ export default function ProductCard({ product, user, hasPurchased, control }: Pr
             title: 'Please Register',
             description: 'You need to enter your Gaming ID to make a purchase.',
         });
-        // This relies on a global modal system or state, which is complex.
-        // A simpler approach is to let the user see the modal and handle it there.
+        return;
     }
     setIsModalOpen(true);
   }
 
-  // Ensure product has a string ID for the PurchaseModal
   const productWithStrId = { ...product, _id: product._id.toString() };
-
-  const isBlockedByControl = control?.type === 'block';
-  const isPurchaseAllowedByControl = control?.type === 'allowPurchase';
-  const isOneTimeBuyAndPurchased = product.oneTimeBuy && hasPurchased;
   
-  // Final purchase check
-  const canPurchase = isPurchaseAllowedByControl ? true : !isOneTimeBuyAndPurchased;
-  
-  // Determine buy button state
   const getBuyButton = () => {
     const isExpired = product.endDate && new Date(product.endDate) < new Date();
     
@@ -135,11 +127,25 @@ export default function ProductCard({ product, user, hasPurchased, control }: Pr
       return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />Item Unavailable</Button>;
     }
 
-    if (isBlockedByControl) {
+    if (control?.type === 'block') {
       return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />{control.blockReason}</Button>;
     }
-    if (!canPurchase) {
-       return <Button className="w-full font-bold text-base" disabled variant="secondary"><CheckCircle2 className="mr-2 h-4 w-4" />Already Purchased</Button>;
+
+    if (hasPendingOrder) {
+      return <Button className="w-full font-bold text-base" disabled variant="secondary"><Timer className="mr-2 h-4 w-4" />Processing...</Button>;
+    }
+
+    // Check for general limit rule
+    if (control?.type === 'limitPurchase' && control.limitCount && completedPurchases >= control.limitCount) {
+        return <Button className="w-full font-bold text-base" disabled variant="secondary"><Lock className="mr-2 h-4 w-4" />Purchase Limit Reached</Button>;
+    }
+    
+    // Check for one-time-buy rule, considering allowances
+    if (product.oneTimeBuy) {
+        const allowance = control?.type === 'allowPurchase' ? (control.allowanceCount || 0) : 0;
+        if (completedPurchases >= 1 + allowance) {
+            return <Button className="w-full font-bold text-base" disabled variant="secondary"><CheckCircle2 className="mr-2 h-4 w-4" />Already Purchased</Button>;
+        }
     }
 
     return (
