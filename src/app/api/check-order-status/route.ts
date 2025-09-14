@@ -7,22 +7,17 @@ import { unstable_noStore as noStore } from 'next/cache';
 export async function GET(req: NextRequest) {
   noStore();
   const { searchParams } = new URL(req.url);
-  const gamingId = searchParams.get('gamingId');
+  const transactionId = searchParams.get('transactionId');
 
-  if (!gamingId) {
-    return NextResponse.json({ success: false, message: 'Gaming ID is required.' }, { status: 400 });
+  if (!transactionId) {
+    return NextResponse.json({ success: false, message: 'Transaction ID is required.' }, { status: 400 });
   }
 
   try {
     const db = await connectToDatabase();
     
-    // Check for a recent, successful order for this user
-    // We look for an order created in the last 60 seconds.
-    const sixtySecondsAgo = new Date(Date.now() - 60000);
-    
     const recentOrder = await db.collection<Order>('orders').findOne({
-      gamingId,
-      createdAt: { $gte: sixtySecondsAgo },
+      transactionId: transactionId,
       status: { $in: ['Completed', 'Processing'] }
     });
 

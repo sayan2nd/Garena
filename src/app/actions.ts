@@ -9,6 +9,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -634,7 +635,7 @@ export async function createRedeemCodeOrder(
 }
 
 // --- Razorpay Actions ---
-export async function createRazorpayOrder(amount: number, gamingId: string, productId: string) {
+export async function createRazorpayOrder(amount: number, gamingId: string, productId: string, transactionId: string) {
     noStore();
     const razorpay = new Razorpay({
         key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
@@ -644,6 +645,7 @@ export async function createRazorpayOrder(amount: number, gamingId: string, prod
     const notes = {
         gamingId: gamingId,
         productId: productId,
+        transactionId: transactionId,
     };
 
     try {
@@ -1885,6 +1887,7 @@ export async function getUserProductControls(gamingId: string): Promise<UserProd
         return [];
     }
 }
+
 
 
 

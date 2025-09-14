@@ -65,6 +65,7 @@ export interface Order {
     status: 'Processing' | 'Completed' | 'Failed';
     utr?: string;
     redeemCode?: string;
+    transactionId?: string; // Unique ID for the purchase attempt from the client
     referralCode?: string; // This will store the referral code of the referrer
     coinsUsed: number;
     finalPrice: number;

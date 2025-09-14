@@ -1,5 +1,6 @@
 
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -44,10 +45,10 @@ export async function POST(req: NextRequest) {
     const paymentEntity = payload.payload.payment.entity;
 
     const { id: razorpayPaymentId, notes } = paymentEntity;
-    const { gamingId, productId } = notes;
+    const { gamingId, productId, transactionId } = notes;
 
-    if (!productId || !gamingId) {
-      console.error('Webhook payload missing productId or gamingId in notes');
+    if (!productId || !gamingId || !transactionId) {
+      console.error('Webhook payload missing productId, gamingId, or transactionId in notes');
       return NextResponse.json({ success: false, message: 'Missing required notes.' }, { status: 400 });
     }
     
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
         paymentMethod: 'UPI',
         status: orderStatus,
         utr: razorpayPaymentId, // Storing payment ID
+        transactionId: transactionId, // Store the unique transaction ID
         referralCode: user.referredByCode,
         coinsUsed,
         finalPrice,

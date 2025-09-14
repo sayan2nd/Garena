@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -69,11 +70,13 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   const [isLoading, setIsLoading] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<{qrImageUrl: string; paymentLinkUrl: string; orderId: string;} | null>(null);
   const [isQrLoading, setIsQrLoading] = useState(false);
+  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
+    setCurrentTransactionId(null);
     setTimeout(onClose, 300); // Allow for closing animation
   }, [onClose]);
   
@@ -89,10 +92,10 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   // Polling logic for QR code payment
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
-    if (step === 'qrPayment' && user?.gamingId) {
+    if (step === 'qrPayment' && currentTransactionId) {
       intervalId = setInterval(async () => {
         try {
-          const response = await fetch(`/api/check-order-status?gamingId=${user.gamingId}`);
+          const response = await fetch(`/api/check-order-status?transactionId=${currentTransactionId}`);
           const data = await response.json();
           if (data.success && data.orderFound) {
             clearInterval(intervalId);
@@ -106,10 +109,10 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
           console.error("Error checking payment status:", error);
           // Don't stop polling on fetch errors, just log them
         }
-      }, 5000); // Poll every 5 seconds
+      }, 3000); // Poll every 3 seconds
     }
     return () => clearInterval(intervalId);
-  }, [step, user, toast]);
+  }, [step, currentTransactionId, toast]);
 
 
   useEffect(() => {
@@ -152,8 +155,11 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         setStep('details'); // Go back
         return;
     }
+    
+    const uniqueTransactionId = `${Date.now()}-${user.gamingId}-${product._id}`;
+    setCurrentTransactionId(uniqueTransactionId);
 
-    const result = await createRazorpayOrder(finalPrice, user.gamingId, product._id);
+    const result = await createRazorpayOrder(finalPrice, user.gamingId, product._id, uniqueTransactionId);
 
     if (result.success && result.qrImageUrl && result.paymentLinkUrl && result.orderId) {
         setPaymentDetails({ qrImageUrl: result.qrImageUrl, paymentLinkUrl: result.paymentLinkUrl, orderId: result.orderId });
