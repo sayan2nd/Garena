@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Link from 'next/link';
+import { checkPurchaseEligibility } from '@/app/actions/check-purchase-eligibility';
 
 // The product passed to this modal has its _id serialized to a string
 interface ProductWithStringId extends Omit<Product, '_id'> {
@@ -31,7 +32,7 @@ interface PurchaseModalProps {
   onClose: () => void;
 }
 
-type ModalStep = 'register' | 'details' | 'processing' | 'qrPayment';
+type ModalStep = 'verifying' | 'register' | 'details' | 'processing' | 'qrPayment';
 
 const Countdown = ({ onExpire }: { onExpire: () => void }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
@@ -62,7 +63,7 @@ const Countdown = ({ onExpire }: { onExpire: () => void }) => {
 export default function PurchaseModal({ product, user: initialUser, onClose }: PurchaseModalProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [user, setUser] = useState<User | null>(initialUser);
-  const [step, setStep] = useState<ModalStep>(initialUser ? 'details' : 'register');
+  const [step, setStep] = useState<ModalStep>(initialUser ? 'verifying' : 'register');
   const [gamingId, setGamingId] = useState(initialUser?.gamingId || '');
   const [redeemCode, setRedeemCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -114,11 +115,31 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
 
 
   useEffect(() => {
+    if (step === 'verifying' && user) {
+        checkPurchaseEligibility(user._id.toString(), product._id)
+            .then(result => {
+                if (result.eligible) {
+                    setStep('details');
+                } else {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Not Eligible',
+                        description: result.message
+                    });
+                    handleClose();
+                    router.refresh(); // Refresh page to show updated state
+                }
+            });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, user, product._id, handleClose, router, toast]);
+
+  useEffect(() => {
     // If the modal is open, and a user gets passed in (e.g. after registration), move to details
     if (isOpen && initialUser && step === 'register') {
       setUser(initialUser);
       setGamingId(initialUser.gamingId);
-      setStep('details');
+      setStep('verifying');
     }
   }, [initialUser, isOpen, step]);
 
@@ -190,6 +211,14 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   
   const renderContent = () => {
     switch (step) {
+      case 'verifying':
+        return (
+            <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <h2 className="text-xl font-headline">Verifying Eligibility...</h2>
+                <p className="text-muted-foreground">Please wait while we check if you can purchase this item.</p>
+            </div>
+        );
       case 'register':
         return (
              <>
