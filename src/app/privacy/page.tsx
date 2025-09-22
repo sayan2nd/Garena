@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -46,7 +47,19 @@ export default function PrivacyPolicyPage() {
     setIsLoadingHistory(true);
     try {
       const historyData = await getLoginHistory();
-      setHistory(historyData);
+      
+      // De-duplicate the history on the client, keeping the most recent entry for each ID
+      const uniqueHistory: HistoryItem[] = [];
+      const seenIds = new Set<string>();
+      
+      for (const item of historyData) {
+        if (!seenIds.has(item.gamingId)) {
+          uniqueHistory.push(item);
+          seenIds.add(item.gamingId);
+        }
+      }
+
+      setHistory(uniqueHistory);
     } catch (error) {
       console.error("Failed to fetch login history", error);
     }
