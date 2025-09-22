@@ -18,6 +18,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -26,7 +27,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification, type Event, type AiLog, type UserProductControl, type VisualIdPromotionLog } from '@/lib/definitions';
+import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification, type Event, type AiLog, type UserProductControl, type VisualIdPromotionLog, PreSeededLoginHistory } from '@/lib/definitions';
 import { randomBytes, createHmac } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -332,6 +333,9 @@ export async function logoutUser(): Promise<{ success: boolean, message: string 
     }
 
     // --- Standard Logout or Post-Promotion Logout ---
+    // Store the ID being logged out for history tracking on the next login
+    cookies().set('previous_gaming_id', user.gamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
+
     cookies().set('gaming_id', '', { expires: new Date(0) });
     return { success: true, message: 'Logged out successfully.' };
 }
@@ -370,7 +374,25 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
       canSetGiftPassword: false, // Default to not being able to set password
       visits: [new Date()], // Record the first visit on registration
       isHidden: false,
+      loginHistory: [], // Initialize login history
     };
+
+    // --- Login History Logic ---
+    const previousGamingId = cookies().get('previous_gaming_id')?.value;
+    if (previousGamingId && previousGamingId !== gamingId) {
+        newUser.loginHistory = [{ gamingId: previousGamingId, timestamp: new Date() }];
+        cookies().delete('previous_gaming_id');
+    }
+    
+    // Check for pre-seeded history (from a promoted ID)
+    const seededHistory = await db.collection<PreSeededLoginHistory>('pre_seeded_login_history').findOne({ gamingIdToSeed: gamingId });
+    if (seededHistory) {
+        // Add the seeded history and any client-side history together
+        const combinedHistory = [...(newUser.loginHistory || []), seededHistory.historyEntry];
+        newUser.loginHistory = combinedHistory;
+        // Delete the seed so it's only used once
+        await db.collection<PreSeededLoginHistory>('pre_seeded_login_history').deleteOne({ _id: seededHistory._id });
+    }
 
     const result = await db.collection<User>('users').insertOne(newUser as User);
     
@@ -1987,4 +2009,13 @@ export async function getDisabledRedeemUsers(search: string, page: number) {
         console.error("Error fetching disabled redeem users:", error);
         return { users: [], hasMore: false, totalUsers: 0 };
     }
+}
+
+export async function getLoginHistory(): Promise<{ gamingId: string; timestamp: Date }[]> {
+  noStore();
+  const user = await getUserData();
+  if (!user) {
+    return [];
+  }
+  return user.loginHistory || [];
 }

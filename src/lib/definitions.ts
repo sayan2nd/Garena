@@ -33,6 +33,7 @@ export interface User {
     fcmToken?: string; // Firebase Cloud Messaging token
     isRedeemDisabled?: boolean; // If true, user cannot use redeem codes
     redeemDisabledAt?: Date; // Timestamp for when the redeem code was disabled
+    loginHistory?: { gamingId: string; timestamp: Date }[];
 }
 
 
@@ -137,4 +138,15 @@ export interface VisualIdPromotionLog {
     oldGamingId: string;
     newGamingId: string;
     promotionDate: Date;
+}
+
+// Represents a pre-seeded history entry for a user that hasn't been created yet.
+// This is used for promoted IDs.
+export interface PreSeededLoginHistory {
+  _id: ObjectId;
+  gamingIdToSeed: string;
+  historyEntry: {
+    gamingId: string;
+    timestamp: Date;
+  };
 }

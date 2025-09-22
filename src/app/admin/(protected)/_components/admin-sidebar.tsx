@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { logoutAdmin } from '@/app/actions';
-import { Home, ListChecks, ListX, Users, LogOut, Banknote, Tag, ArchiveRestore, Coins, ShieldBan, Box, EyeOff, Bell, CalendarPlus, MessageCircle, SlidersHorizontal, FileCode, PersonStanding, BadgeCheck } from 'lucide-react';
+import { Home, ListChecks, ListX, Users, LogOut, Banknote, Tag, ArchiveRestore, Coins, ShieldBan, Box, EyeOff, Bell, CalendarPlus, MessageCircle, SlidersHorizontal, FileCode, PersonStanding, BadgeCheck, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -20,6 +20,7 @@ const navItems = [
   { href: '/admin/disabled-redeem-users', label: 'Disabled Redeem Users', icon: FileCode },
   { href: '/admin/visualize-id', label: 'Visualize ID', icon: PersonStanding },
   { href: '/admin/promoted-ids', label: 'Promoted IDs', icon: BadgeCheck },
+  { href: '/admin/login-history', label: 'Login History', icon: History },
   { href: '/admin/withdrawals', label: 'Withdrawals', icon: Banknote },
   { href: '/admin/price-management', label: 'Price Management', icon: Tag },
   { href: '/admin/vanished-products', label: 'Vanished Products', icon: ArchiveRestore },

@@ -1,13 +1,57 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { getLoginHistory } from '@/app/actions';
+import { Loader2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+type HistoryItem = {
+  gamingId: string;
+  timestamp: Date;
+};
+
+const FormattedDate = ({ dateString }: { dateString: Date }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  const date = new Date(dateString);
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  });
+};
+
 
 export default function PrivacyPolicyPage() {
   const [currentDate, setCurrentDate] = useState('');
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     setCurrentDate(new Date().toLocaleDateString());
   }, []);
+
+  const handleFetchHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const historyData = await getLoginHistory();
+      setHistory(historyData);
+    } catch (error) {
+      console.error("Failed to fetch login history", error);
+    }
+    setIsLoadingHistory(false);
+  };
 
   return (
     <div className="bg-background">
@@ -25,7 +69,7 @@ export default function PrivacyPolicyPage() {
 
             <h2 className="font-headline text-3xl font-semibold !mt-12 !mb-4">1. Information We Collect</h2>
             <p>
-              We may collect personal information such as your name, email address, and in-game user ID when you make a purchase, create an account, or contact us. We also collect transaction data related to your purchases.
+              We may collect personal information such as your name, email address, and in-game user ID when you make a purchase, create an account, or contact us. We also collect transaction data related to your purchases and may store a history of Gaming IDs used on your device for security and personalization purposes.
             </p>
 
             <h2 className="font-headline text-3xl font-semibold !mt-12 !mb-4">2. How We Use Your Information</h2>
@@ -52,6 +96,49 @@ export default function PrivacyPolicyPage() {
             <p>
               If you have questions or comments about this Privacy Policy, please contact us through our contact page.
             </p>
+          </div>
+          <div className="text-center mt-12">
+            <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" onClick={handleFetchHistory}>
+                  View Login History
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Your Login History</DialogTitle>
+                  <DialogDescription>
+                    This is a list of previous Gaming IDs used on this device.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  {isLoadingHistory ? (
+                    <div className="flex justify-center items-center h-40">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                  ) : history.length > 0 ? (
+                    <ScrollArea className="h-64">
+                      <div className="space-y-3 pr-4">
+                        {history.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm p-3 rounded-md bg-muted/50">
+                            <div>
+                                <p className="font-semibold font-mono">{item.gamingId}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  <FormattedDate dateString={item.timestamp} />
+                                </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">
+                      No previous login history found on this device.
+                    </p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

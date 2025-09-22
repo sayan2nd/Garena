@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToDatabase } from '@/lib/mongodb';
-import { type User, type Order, type Notification, type AiLog, type UserProductControl, type VisualIdPromotionLog } from '@/lib/definitions';
+import { type User, type Order, type Notification, type AiLog, type UserProductControl, type VisualIdPromotionLog, PreSeededLoginHistory } from '@/lib/definitions';
 import { ObjectId } from 'mongodb';
 
 /**
@@ -33,6 +33,7 @@ export async function promoteVisualId(user: User): Promise<void> {
         isRedeemDisabled: user.isRedeemDisabled,
         redeemDisabledAt: user.redeemDisabledAt,
         isHidden: user.isHidden,
+        loginHistory: user.loginHistory,
       };
       const insertResult = await db.collection<User>('users').insertOne(newUser as User, { session });
       const newUserId = insertResult.insertedId.toString();
@@ -42,8 +43,19 @@ export async function promoteVisualId(user: User): Promise<void> {
       await db.collection<Notification>('notifications').updateMany({ gamingId: oldGamingId }, { $set: { gamingId: newGamingId } }, { session });
       await db.collection<AiLog>('ai_logs').updateMany({ gamingId: oldGamingId }, { $set: { gamingId: newGamingId } }, { session });
       await db.collection<UserProductControl>('user_product_controls').updateMany({ gamingId: oldGamingId }, { $set: { gamingId: newGamingId } }, { session });
+      
+      // 3. Pre-seed login history for the old ID that is about to be deleted
+      const historySeed: Omit<PreSeededLoginHistory, '_id'> = {
+          gamingIdToSeed: oldGamingId,
+          historyEntry: {
+              gamingId: newGamingId, // The ID it was promoted to
+              timestamp: new Date()
+          }
+      };
+      await db.collection<PreSeededLoginHistory>('pre_seeded_login_history').insertOne(historySeed as PreSeededLoginHistory, { session });
 
-      // 3. Log the promotion event for admin tracking.
+
+      // 4. Log the promotion event for admin tracking.
       const promotionLog: Omit<VisualIdPromotionLog, '_id'> = {
         oldGamingId,
         newGamingId,
@@ -51,7 +63,7 @@ export async function promoteVisualId(user: User): Promise<void> {
       };
       await db.collection('visual_id_promotions').insertOne(promotionLog as VisualIdPromotionLog, { session });
       
-      // 4. Permanently delete the old user document.
+      // 5. Permanently delete the old user document.
       const deleteResult = await db.collection<User>('users').deleteOne({ gamingId: oldGamingId }, { session });
       if (deleteResult.deletedCount === 0) {
         throw new Error(`Failed to delete the old user document for ID: ${oldGamingId}`);
