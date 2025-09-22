@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -301,21 +302,29 @@ export async function logoutUser(): Promise<{ success: boolean, message: string 
         cookies().set('gaming_id', '', { expires: new Date(0) });
         return { success: true, message: 'Logged out.' };
     }
+
+    const logoutTimestamp = new Date();
     
     // --- Special Logout: Visual ID Swap ---
     if (user.visualGamingId && user.visualGamingId.trim() !== '') {
         try {
             await promoteVisualId(user);
-            // On successful promotion, set the cookie to the *new* ID (the old visual ID)
-            cookies().set('previous_gaming_id', user.visualGamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
+            const history = {
+                previousGamingId: user.visualGamingId,
+                logoutTimestamp: logoutTimestamp,
+            };
+            cookies().set('logout_history', JSON.stringify(history), { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
         } catch (error: any) {
             console.error('Visual ID swap transaction failed:', error);
             return { success: false, message: error.message || 'An error occurred during the ID swap. Please contact support.' };
         }
     } else {
         // --- Standard Logout or Post-Promotion Logout ---
-        // Store the ID being logged out for history tracking on the next login
-        cookies().set('previous_gaming_id', user.gamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
+        const history = {
+            previousGamingId: user.gamingId,
+            logoutTimestamp: logoutTimestamp,
+        };
+        cookies().set('logout_history', JSON.stringify(history), { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
     }
 
     cookies().set('gaming_id', '', { expires: new Date(0) });
@@ -331,7 +340,15 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
 
   try {
     const db = await connectToDatabase();
-    const previousGamingId = cookies().get('previous_gaming_id')?.value;
+    const logoutHistoryCookie = cookies().get('logout_history')?.value;
+    let logoutHistory = null;
+    if(logoutHistoryCookie) {
+        try {
+            logoutHistory = JSON.parse(logoutHistoryCookie);
+        } catch (e) {
+            // Malformed cookie, ignore
+        }
+    }
 
     const bannedUser = await db.collection<User>('users').findOne({ gamingId, isBanned: true });
     if (bannedUser) {
@@ -342,20 +359,18 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
 
     if (user) {
       cookies().set('gaming_id', gamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
-      if (previousGamingId && previousGamingId !== gamingId) {
-        // Find user again to perform update
+      if (logoutHistory && logoutHistory.previousGamingId !== gamingId) {
         const userToUpdate = await db.collection<User>('users').findOne({ gamingId });
         if(userToUpdate) {
-            const newHistoryEntry = { gamingId: previousGamingId, timestamp: new Date() };
-            // Remove the old entry if it exists to prevent duplicates, then add the new one
-            const existingHistory = userToUpdate.loginHistory?.filter(h => h.gamingId !== previousGamingId) || [];
+            const newHistoryEntry = { gamingId: logoutHistory.previousGamingId, timestamp: new Date(logoutHistory.logoutTimestamp) };
+            const existingHistory = userToUpdate.loginHistory?.filter(h => h.gamingId !== logoutHistory.previousGamingId) || [];
             const updatedHistory = [newHistoryEntry, ...existingHistory];
             
             await db.collection<User>('users').updateOne(
                 { _id: userToUpdate._id },
                 { $set: { loginHistory: updatedHistory } }
             );
-            cookies().delete('previous_gaming_id');
+            cookies().delete('logout_history');
         }
       }
       return { success: true, message: 'Welcome back!', user: JSON.parse(JSON.stringify(user)) };
@@ -364,9 +379,9 @@ export async function registerGamingId(gamingId: string): Promise<{ success: boo
     const referralCode = cookies().get('referral_code')?.value;
 
     let loginHistory: { gamingId: string, timestamp: Date }[] = [];
-    if (previousGamingId && previousGamingId !== gamingId) {
-        loginHistory.push({ gamingId: previousGamingId, timestamp: new Date() });
-        cookies().delete('previous_gaming_id');
+    if (logoutHistory && logoutHistory.previousGamingId !== gamingId) {
+        loginHistory.push({ gamingId: logoutHistory.previousGamingId, timestamp: new Date(logoutHistory.logoutTimestamp) });
+        cookies().delete('logout_history');
     }
      // Check for pre-seeded history
     const seededHistory = await db.collection<PreSeededLoginHistory>('pre_seeded_login_history').findOne({ gamingIdToSeed: gamingId });
@@ -420,17 +435,23 @@ export async function getUserData(): Promise<User | null> {
             return null;
         }
         
-        const previousGamingId = cookies().get('previous_gaming_id')?.value;
+        const logoutHistoryCookie = cookies().get('logout_history')?.value;
+        let logoutHistory = null;
+        if(logoutHistoryCookie) {
+            try {
+                logoutHistory = JSON.parse(logoutHistoryCookie);
+            } catch(e) { /* malformed cookie */ }
+        }
+
         let loginHistoryUpdate: any = {};
         
-        if (previousGamingId && previousGamingId !== gamingId) {
-            const newHistoryEntry = { gamingId: previousGamingId, timestamp: new Date() };
-            // Remove the old entry if it exists to prevent duplicates, then add the new one
-            const existingHistory = user.loginHistory?.filter(h => h.gamingId !== previousGamingId) || [];
+        if (logoutHistory && logoutHistory.previousGamingId !== gamingId) {
+            const newHistoryEntry = { gamingId: logoutHistory.previousGamingId, timestamp: new Date(logoutHistory.logoutTimestamp) };
+            const existingHistory = user.loginHistory?.filter(h => h.gamingId !== logoutHistory.previousGamingId) || [];
             const updatedHistory = [newHistoryEntry, ...existingHistory];
             loginHistoryUpdate = { loginHistory: updatedHistory };
 
-            cookies().delete('previous_gaming_id');
+            cookies().delete('logout_history');
         }
 
         await db.collection<User>('users').updateOne(
