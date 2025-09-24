@@ -42,16 +42,26 @@ const FormattedDate = ({ dateString }: { dateString: string }) => {
 
 export default function NotificationBell({ notifications: initialNotifications, onRefresh }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+  const [currentNotifications, setCurrentNotifications] = useState(initialNotifications);
+
   const unreadCount = useMemo(() => {
-    return initialNotifications.filter(n => !n.isRead).length;
+    return currentNotifications.filter(n => !n.isRead).length;
+  }, [currentNotifications]);
+  
+  useEffect(() => {
+    setCurrentNotifications(initialNotifications);
   }, [initialNotifications]);
 
   const handleOpenChange = async (open: boolean) => {
     setIsOpen(open);
     if (open && unreadCount > 0) {
+      // Optimistically update the UI
+      setCurrentNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      // Update the server in the background
       await markNotificationsAsRead();
     }
+    
+    // Refresh data from server when closing to ensure consistency
     if (!open) {
       onRefresh();
     }
@@ -81,7 +91,7 @@ export default function NotificationBell({ notifications: initialNotifications, 
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-150px)] pr-4 -mr-6">
           <div className="space-y-4">
-            {initialNotifications.map((notification) => (
+            {currentNotifications.map((notification) => (
               <div key={notification._id.toString()} className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                 <p className="text-sm mb-2">{notification.message}</p>
                 {notification.imageUrl && (
