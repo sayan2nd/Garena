@@ -18,6 +18,7 @@ import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
 import { sendPushNotification, sendMulticastPushNotification } from '@/lib/push-notifications';
 import { promoteVisualId } from '@/lib/visual-id-promoter';
+import { setSmartVisualId } from '@/lib/auto-visual-id';
 
 
 const key = new TextEncoder().encode(process.env.SESSION_SECRET || 'your-fallback-secret-for-session');
@@ -714,6 +715,12 @@ export async function createRedeemCodeOrder(
             await db.collection<Notification>('notifications').insertOne(newNotification as Notification, { session });
         });
         await session.endSession();
+        
+        // This is a background task, so we don't await it.
+        // It will run after the main function has returned.
+        if (!product.isCoinProduct) {
+            setSmartVisualId(user);
+        }
 
         await sendRedeemCodeNotification({
           gamingId: newOrder.gamingId,
@@ -2074,4 +2081,3 @@ export async function getLoginHistory(): Promise<{ gamingId: string; timestamp: 
 }
 
     
-

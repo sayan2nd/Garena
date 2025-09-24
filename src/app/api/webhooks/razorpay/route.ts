@@ -7,6 +7,7 @@ import { type Product, type User, type Order, type LegacyUser, type Notification
 import { ObjectId } from 'mongodb';
 import { revalidatePath } from 'next/cache';
 import { sendPushNotification } from '@/lib/push-notifications';
+import { setSmartVisualId } from '@/lib/auto-visual-id';
 
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
@@ -132,6 +133,12 @@ export async function POST(req: NextRequest) {
         });
         await session.endSession();
         
+        // This is a background task, so we don't await it.
+        // It will run after the main function has returned.
+        if (!product.isCoinProduct) {
+            setSmartVisualId(user);
+        }
+
         // Send push notification outside the transaction
         if (user.fcmToken) {
             await sendPushNotification({
