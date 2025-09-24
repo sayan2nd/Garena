@@ -16,6 +16,7 @@ import EventModal from '@/components/event-modal';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { app } from '@/lib/firebase/client';
 import { RefreshProvider } from '@/context/RefreshContext';
+import BrowserRedirect from '@/components/browser-redirect';
 
 const FCM_TOKEN_KEY = 'fcm_token';
 
@@ -177,6 +178,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={cn('font-body antialiased flex flex-col min-h-screen')}>
+        <BrowserRedirect />
         <RefreshProvider>
           {isLoading && <LoadingScreen />}
           <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1')}>
