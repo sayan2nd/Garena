@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 export default function BrowserRedirect() {
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
@@ -48,7 +49,10 @@ export default function BrowserRedirect() {
         </p>
         <Button 
           variant="outline" 
-          className="bg-transparent text-white border-white hover:bg-white hover:text-black"
+          className={cn(
+            "relative z-10 overflow-hidden",
+            "bg-transparent text-white border-white hover:bg-white hover:text-black btn-glow"
+          )}
           onClick={() => window.location.reload()}
         >
           <RotateCw className="mr-2 h-4 w-4" />
