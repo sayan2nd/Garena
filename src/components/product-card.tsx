@@ -30,7 +30,7 @@ interface ProductCardProps {
   control: UserProductControl | undefined;
 }
 
-const CountdownTimer = ({ endDate }: { endDate: Date }) => {
+const CountdownTimer = ({ endDate, isComingSoon }: { endDate: Date; isComingSoon?: boolean }) => {
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -69,17 +69,23 @@ const CountdownTimer = ({ endDate }: { endDate: Date }) => {
 
   const hasEnded = days === 0 && hours === 0 && minutes === 0 && seconds === 0;
 
+  const timerLabel = isComingSoon ? "Coming Soon in:" : "Ending soon:";
+  const timerColor = isComingSoon ? "text-blue-500 border-blue-500/20" : "text-destructive border-destructive/20";
+  const finishedLabel = isComingSoon ? "Available Now" : "Ended";
+  const finishedColor = "text-muted-foreground border-muted-foreground/20";
+
+
   return (
     <div className={cn(
-        "absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-destructive font-bold text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1.5 border border-destructive/20",
-        hasEnded && "text-muted-foreground border-muted-foreground/20"
+        "absolute top-2 right-2 bg-background/80 backdrop-blur-sm font-bold text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1.5 border",
+        hasEnded ? finishedColor : timerColor
       )}>
         <Timer className="w-3.5 h-3.5" />
         {hasEnded ? (
-            <span>Ended</span>
+            <span>{finishedLabel}</span>
         ) : (
             <>
-                <span>Ending soon:</span>
+                <span>{timerLabel}</span>
                 <div className="flex items-center gap-1 font-mono tracking-tighter">
                     {days > 0 && <span>{String(days).padStart(2, '0')}d</span>}
                     <span>{String(hours).padStart(2, '0')}h</span>
@@ -117,9 +123,13 @@ export default function ProductCard({ product, user, orders, control }: ProductC
   const productWithStrId = { ...product, _id: product._id.toString() };
   
   const getBuyButton = () => {
-    const isExpired = product.endDate && new Date(product.endDate) < new Date();
+    const isEventActive = product.endDate && new Date(product.endDate) > new Date();
+
+    if (product.isComingSoon && isEventActive) {
+        return <Button className="w-full font-bold text-base" disabled variant="secondary"><Timer className="mr-2 h-4 w-4" />Coming Soon</Button>;
+    }
     
-    if (isExpired && !product.isAvailable) {
+    if (!product.isComingSoon && isEventActive === false && !product.isAvailable) {
        return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />Expired</Button>;
     }
     
@@ -164,7 +174,7 @@ export default function ProductCard({ product, user, orders, control }: ProductC
         <CardHeader className="p-0">
           <div className="relative aspect-video">
             <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint={product.dataAiHint}/>
-            {product.endDate && <CountdownTimer endDate={new Date(product.endDate)} />}
+            {product.endDate && <CountdownTimer endDate={new Date(product.endDate)} isComingSoon={product.isComingSoon} />}
           </div>
         </CardHeader>
         <CardContent className="flex-grow p-4">

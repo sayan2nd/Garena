@@ -50,6 +50,7 @@ export interface Product {
     coinsApplicable?: number;
     isCoinProduct?: boolean;
     endDate?: Date;
+    isComingSoon?: boolean;
     displayOrder?: number;
     category?: string;
     onlyUpi?: boolean;

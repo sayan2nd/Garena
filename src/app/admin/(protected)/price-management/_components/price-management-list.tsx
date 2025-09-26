@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 interface PriceManagementListProps {
@@ -188,14 +189,24 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                     defaultValue={product.imageUrl}
                   />
                 </div>
-                 <div className="space-y-2">
-                  <Label htmlFor={`endDate-${product._id}`}>End Date (Optional)</Label>
-                  <Input
-                    id={`endDate-${product._id}`}
-                    name="endDate"
-                    type="datetime-local"
-                    defaultValue={formatDateForInput(product.endDate)}
-                  />
+                <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`endDate-${product._id}`}>Event Date (Optional)</Label>
+                    <Input
+                      id={`endDate-${product._id}`}
+                      name="endDate"
+                      type="datetime-local"
+                      defaultValue={formatDateForInput(product.endDate)}
+                    />
+                  </div>
+                  <div className="flex items-end pb-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id={`isComingSoon-${product._id}`} name="isComingSoon" defaultChecked={product.isComingSoon} />
+                        <Label htmlFor={`isComingSoon-${product._id}`} className="text-sm font-medium leading-none">
+                          Set as Coming Soon
+                        </Label>
+                      </div>
+                  </div>
                 </div>
 
                 <div className="flex items-end justify-between space-x-4">

@@ -1118,6 +1118,7 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
 export async function getProducts(query?: any): Promise<Product[]> {
     noStore();
     const db = await connectToDatabase();
+    const now = new Date();
     
     const gamingId = cookies().get('gaming_id')?.value;
     
@@ -1142,11 +1143,25 @@ export async function getProducts(query?: any): Promise<Product[]> {
       .find(baseQuery)
       .sort({ displayOrder: 1 })
       .toArray();
+
+    // Batch update products that are now available
+    const newlyAvailableProductIds = productsFromDb
+        .filter(p => p.isComingSoon && p.endDate && new Date(p.endDate) <= now && !p.isAvailable)
+        .map(p => p._id);
+
+    if (newlyAvailableProductIds.length > 0) {
+        await db.collection<Product>('products').updateMany(
+            { _id: { $in: newlyAvailableProductIds } },
+            { $set: { isAvailable: true, isComingSoon: false } }
+        );
+        // Refetch after update to ensure data consistency
+        const updatedProducts = await db.collection<Product>('products').find(baseQuery).sort({ displayOrder: 1 }).toArray();
+        return JSON.parse(JSON.stringify(updatedProducts));
+    }
       
-    // Handle automatic expiration
-    const now = new Date();
+    // Handle automatic expiration for non-coming-soon products
     const processedProducts = productsFromDb.map(product => {
-        if (product.endDate && new Date(product.endDate) < now) {
+        if (!product.isComingSoon && product.endDate && new Date(product.endDate) < now) {
             return { ...product, isAvailable: false };
         }
         return product;
@@ -1163,6 +1178,7 @@ const productUpdateSchema = z.object({
   isAvailable: z.enum(['on', 'off']).optional(),
   onlyUpi: z.enum(['on', 'off']).optional(),
   oneTimeBuy: z.enum(['on', 'off']).optional(),
+  isComingSoon: z.enum(['on', 'off']).optional(),
   endDate: z.string().optional(),
   imageUrl: z.string().url('Must be a valid URL.'),
   displayOrder: z.coerce.number().int().min(1, 'Display order must be a positive number.'),
@@ -1214,6 +1230,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     const isAvailable = rawFormData.isAvailable === 'on';
     const onlyUpi = rawFormData.onlyUpi === 'on';
     const oneTimeBuy = rawFormData.oneTimeBuy === 'on';
+    const isComingSoon = rawFormData.isComingSoon === 'on';
     const endDate = data.endDate ? new Date(data.endDate) : undefined;
     const isCoinProduct = data.isCoinProduct === 'true';
     const visibleToList = data.visibility === 'custom' && data.visibleTo
@@ -1227,6 +1244,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         isAvailable,
         onlyUpi,
         oneTimeBuy,
+        isComingSoon,
         endDate,
         imageUrl: data.imageUrl,
         displayOrder: data.displayOrder,
