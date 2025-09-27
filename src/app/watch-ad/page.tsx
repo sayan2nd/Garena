@@ -22,7 +22,7 @@ export default function WatchAdPage() {
   
   const [progress, setProgress] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(false); // Default to sound ON
+  const [isMuted, setIsMuted] = useState(true);
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
@@ -156,10 +156,10 @@ export default function WatchAdPage() {
           className="w-full h-full object-contain"
         />
         
-        {/* Overlay & UI */}
-        <div className="absolute inset-0 bg-black/30 flex flex-col justify-between p-4 overflow-hidden">
+        {/* UI Elements */}
+        <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none">
           {/* Top Bar */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center w-full pointer-events-auto">
             <Progress value={progress} className="w-full h-1.5" />
             <Button onClick={() => setIsMuted(!isMuted)} variant="ghost" size="icon" className="text-white ml-4">
               {isMuted ? <VolumeX /> : <Volume2 />}
@@ -167,7 +167,10 @@ export default function WatchAdPage() {
           </div>
           
           {/* Bottom Bar */}
-          <div className={cn("flex flex-col items-center gap-4 transition-all duration-500", showCta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10')}>
+          <div className={cn(
+            "flex flex-col items-center gap-4 transition-all duration-500 pointer-events-auto",
+            showCta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          )}>
             {isRewardGranted && (
                  <Button onClick={handleSkip} variant="secondary" className="bg-white/80 hover:bg-white text-black backdrop-blur-sm rounded-full">
                     <SkipForward className="mr-2"/>
@@ -191,7 +194,7 @@ export default function WatchAdPage() {
   return (
      <>
         <GamingIdModal isOpen={isRegisterModalOpen} onOpenChange={setIsRegisterModalOpen} />
-        <div className="flex flex-col items-center justify-center min-h-screen bg-black w-full h-full">
+        <div className="flex flex-col items-center justify-center h-full bg-black w-full">
            {renderContent()}
         </div>
      </>

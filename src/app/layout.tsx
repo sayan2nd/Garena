@@ -17,6 +17,8 @@ import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messagi
 import { app } from '@/lib/firebase/client';
 import { RefreshProvider } from '@/context/RefreshContext';
 import BrowserRedirect from '@/components/browser-redirect';
+import { usePathname } from 'next/navigation';
+
 
 const FCM_TOKEN_KEY = 'fcm_token';
 
@@ -33,6 +35,9 @@ export default function RootLayout({
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [showEventModal, setShowEventModal] = useState(false);
   const [notificationKey, setNotificationKey] = useState(0);
+
+  const pathname = usePathname();
+  const isAdPage = pathname === '/watch-ad';
 
 
   const fetchInitialData = useCallback(async () => {
@@ -181,15 +186,17 @@ export default function RootLayout({
         <BrowserRedirect />
         <RefreshProvider>
           {isLoading && <LoadingScreen />}
-          <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1')}>
-            <Header 
-              user={user} 
-              notifications={standardNotifications} 
-              notificationKey={notificationKey}
-              onNotificationRefresh={handleNotificationRefresh}
-            />
-            <main className="flex-grow">{childrenWithProps}</main>
-            <Footer />
+          <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1', isAdPage && 'h-screen')}>
+            {!isAdPage && (
+              <Header 
+                user={user} 
+                notifications={standardNotifications} 
+                notificationKey={notificationKey}
+                onNotificationRefresh={handleNotificationRefresh}
+              />
+            )}
+            <main className={cn('flex-grow', isAdPage && 'h-full')}>{childrenWithProps}</main>
+            {!isAdPage && <Footer />}
           </div>
           <Toaster />
           {popupNotifications.length > 0 && (
