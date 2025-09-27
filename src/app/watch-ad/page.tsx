@@ -27,6 +27,7 @@ export default function WatchAdPage() {
   const [showCta, setShowCta] = useState(false);
   
   const [shouldGrantReward, setShouldGrantReward] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
@@ -86,7 +87,7 @@ export default function WatchAdPage() {
 
     // Reliable timer for redirecting
     const redirectTimer = setTimeout(() => {
-      router.push('/');
+      setIsClosing(true);
     }, ad.totalDuration * 1000);
 
     return () => {
@@ -109,6 +110,12 @@ export default function WatchAdPage() {
     }
   }, [shouldGrantReward, toast]);
 
+  useEffect(() => {
+    if (isClosing) {
+        window.location.href = '/';
+    }
+  }, [isClosing]);
+
   const handleCtaClick = useCallback(() => {
     if (ad) {
       window.open(ad.ctaLink, '_blank');
@@ -120,7 +127,7 @@ export default function WatchAdPage() {
   }
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || isClosing) {
       return (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="w-16 h-16 text-white animate-spin" />
