@@ -23,7 +23,7 @@ export default function WatchAdPage() {
   
   const [progress, setProgress] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
@@ -75,8 +75,6 @@ export default function WatchAdPage() {
     const timer = setInterval(() => {
       setTimeElapsed(prev => {
         const newTime = prev + 1;
-        
-        setProgress((newTime / ad.totalDuration) * 100);
         
         if (newTime >= 3) {
           setShowCta(true);
@@ -174,7 +172,12 @@ export default function WatchAdPage() {
         
         <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none">
           <div className="flex justify-between items-center w-full pointer-events-auto">
-            <Progress value={progress} className="w-full h-1.5" />
+            <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div
+                    className="h-full bg-white animate-progress-smooth"
+                    style={{ '--duration': `${ad.totalDuration}s` } as React.CSSProperties}
+                />
+            </div>
              <div className="flex items-center gap-2 ml-4">
                 <Button onClick={() => setIsMuted(!isMuted)} variant="ghost" size="icon" className="text-white">
                     {isMuted ? <VolumeX /> : <Volume2 />}
