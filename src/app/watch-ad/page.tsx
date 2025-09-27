@@ -23,7 +23,7 @@ export default function WatchAdPage() {
   
   const [progress, setProgress] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
@@ -194,7 +194,7 @@ export default function WatchAdPage() {
           {!ad.hideCtaButton && (
              <div className={cn(
                 "absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-500 pointer-events-auto",
-                showCta ? 'animate-fade-in-up' : 'opacity-0'
+                showCta ? 'animate-pop-in' : 'opacity-0'
             )}>
                 <Button 
                     onClick={handleCtaClick}
