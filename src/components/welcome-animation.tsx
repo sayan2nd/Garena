@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -43,27 +44,27 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
                         strokeLinecap="round" 
                         strokeLinejoin="round" 
                         className="animate-[draw-g_0.5s_ease-out_forwards]"
-                        style={{ strokeDasharray: 60, strokeDashoffset: 60, animationDelay: '1s' }}
+                        style={{ strokeDasharray: 60, strokeDashoffset: 60, animationDelay: '1.2s' }}
                     />
                 </svg>
             </div>
 
             {/* Text animation */}
-            <h1 className="text-4xl font-headline font-bold text-foreground animate-[fade-in-up_0.5s_ease-out_1s_forwards] opacity-0">
+            <h1 className="text-4xl font-headline font-bold text-foreground animate-[fade-in-up_0.5s_ease-out_1.5s_forwards] opacity-0">
               {coins && coins > 0 ? 'Welcome!' : 'Welcome Back!'}
             </h1>
             
             {coins && coins > 0 && (
               <div className="relative mt-4 h-24">
-                 <p className="text-2xl font-semibold text-primary animate-[fade-in-up_0.5s_ease-out_1.2s_forwards] opacity-0">
+                 <p className="text-2xl font-semibold text-primary animate-[fade-in-up_0.5s_ease-out_1.7s_forwards] opacity-0">
                     Congratulations!
                 </p>
                 
-                <div className="flex items-center justify-center gap-2 mt-2 text-xl text-muted-foreground animate-[fade-in-up_0.5s_ease-out_1.4s_forwards] opacity-0">
+                <div className="flex items-center justify-center gap-2 mt-2 text-xl text-muted-foreground animate-[fade-in-up_0.5s_ease-out_1.9s_forwards] opacity-0">
                   You've received
                   <div className="relative flex items-center justify-center gap-1 font-bold text-foreground">
                     <div className="relative z-10 flex items-center gap-1">
-                        <Coins className="w-6 h-6 text-amber-500 animate-[bounce-short_1s_ease-in-out_infinite]" style={{ animationDelay: '1.8s' }} />
+                        <Coins className="w-6 h-6 text-amber-500 animate-[bounce-short_1s_ease-in-out_infinite]" style={{ animationDelay: '2.3s' }} />
                         {coins} Coins
                     </div>
                   </div>
