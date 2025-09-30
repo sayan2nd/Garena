@@ -24,42 +24,44 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
   const [gamingId, setGamingId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [bannedInfo, setBannedInfo] = useState<{ message: string } | null>(null);
-  const [registrationSuccess, setRegistrationSuccess] = useState<{coins: number} | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState<{coins?: number} | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const isMobile = useIsMobile();
 
 
   const handleRegister = async () => {
-    if (!gamingId) {
+    if (gamingId.length < 8 || gamingId.length > 11) {
       toast({
         variant: 'destructive',
         title: 'Invalid Gaming ID',
-        description: 'Please enter your Gaming ID to continue.',
+        description: 'Your Gaming ID must be between 8 and 11 digits.',
       });
       return;
     }
     setIsLoading(true);
     setBannedInfo(null);
     const result = await registerGamingId(gamingId);
+    
+    toast({
+      title: result.success ? 'Success' : 'Error',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
+
     if (result.success && result.user) {
       onOpenChange(false);
       // Check if it's a new registration by looking at the welcome message
       if (result.message.includes('800 coins')) {
         setRegistrationSuccess({ coins: 800 });
       } else {
-        // For returning users, just reload
-        window.location.reload();
+        // For returning users, show animation without coins
+        setRegistrationSuccess({});
       }
     } else if (result.isBanned) {
       setBannedInfo({ message: result.banMessage || 'Your account has been suspended.' });
       setIsLoading(false);
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
       setIsLoading(false);
     }
   };
@@ -147,10 +149,12 @@ Thank you for your consideration.
                     disabled={isLoading}
                     type="tel"
                     pattern="[0-9]*"
+                    minLength={8}
+                    maxLength={11}
                     />
                 </div>
                 <Button onClick={handleRegister} className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : 'Continue & Get 800 Coins'}
+                    {isLoading ? <Loader2 className="animate-spin" /> : 'Continue'}
                 </Button>
                 </div>
             </>
