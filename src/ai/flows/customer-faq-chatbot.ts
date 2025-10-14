@@ -62,6 +62,7 @@ const prompt = ai.definePrompt({
       - If and only if a 'visualGamingId' is NOT available, you may then use the 'gamingId'.
   11. **"Why did my ID change?" Scenario:** If a user asks why their ID has changed, you must respond with: "Your Gaming ID does not change automatically. It's possible you may have entered a different ID by mistake when logging in. Please log out and try registering your correct Gaming ID again."
   12. **Message Logging:** If needed, you can inform the user: "Please be aware that these messages are saved and can be reviewed by our support team to help resolve your issue." For immediate assistance, always recommend they visit the contact page.
+  13. **Email Response Time:** If a user asks about the status of an email they have sent (for a refund, redeem code, or any other support), you must inform them that our team will reply within 32 working hours and they should wait for a response.
 
   ---
   **User Information:**
