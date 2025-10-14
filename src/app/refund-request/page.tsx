@@ -39,12 +39,12 @@ export default function RefundRequestPage() {
 
   const handleSendEmail = () => {
     const recipient = 'garenaffmaxstore@gmail.com';
-    const subject = `Refund Request - ID: ${gamingId} - UTR/Code: ${transactionId}`;
+    const subject = `Refund Request - ID: ${gamingId} - UTR: ${transactionId}`;
     const body = `
 Gaming ID:
 ${gamingId}
 
-UTR/Transaction ID or Redeem Code:
+UTR/Transaction ID:
 ${transactionId}
 
 Reason for refund:
@@ -86,10 +86,10 @@ ${message}
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="transaction-id">UTR/Transaction ID or Redeem Code</Label>
+            <Label htmlFor="transaction-id">UTR/Transaction ID</Label>
             <Input
               id="transaction-id"
-              placeholder="Enter your transaction ID or redeem code"
+              placeholder="Enter your transaction ID"
               value={transactionId}
               onChange={(e) => setTransactionId(e.target.value)}
             />
@@ -107,7 +107,7 @@ ${message}
         </CardContent>
         <CardFooter>
           <Button onClick={handleSendEmail} size="lg" className="w-full" disabled={!gamingId || !transactionId || !message}>
-            Open in Email
+            Send in Email
           </Button>
         </CardFooter>
       </Card>
