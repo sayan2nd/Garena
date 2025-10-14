@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
@@ -146,7 +147,7 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
                                     <AccordionContent className="p-4">
                                         <div className="space-y-4">
                                             {messages.map(log => (
-                                                <div key={log._id.toString()}>
+                                                <div key={log._id.toString()} className="relative group">
                                                     <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
                                                         <p className="font-semibold text-blue-800">User:</p>
                                                         <p>{log.question}</p>
@@ -155,6 +156,29 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
                                                     <div className="p-3 mt-2 rounded-lg bg-gray-50 border">
                                                         <p className="font-semibold text-gray-800">Assistant:</p>
                                                         <p>{log.answer}</p>
+                                                    </div>
+                                                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="destructive" size="icon" className="h-7 w-7">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        This action will permanently delete this message exchange. This cannot be undone.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDelete(log._id.toString())}>
+                                                                        Delete
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
                                                     </div>
                                                 </div>
                                             ))}
