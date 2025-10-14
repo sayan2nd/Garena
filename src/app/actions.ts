@@ -1,6 +1,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1832,6 +1833,27 @@ export async function saveFcmToken(token: string): Promise<{ success: boolean }>
 }
 
 // --- AI Log Actions ---
+
+export async function getChatHistory(): Promise<AiLog[]> {
+    noStore();
+    const gamingId = cookies().get('gaming_id')?.value;
+    if (!gamingId) {
+        return [];
+    }
+
+    try {
+        const db = await connectToDatabase();
+        const logs = await db.collection<AiLog>('ai_logs')
+            .find({ gamingId })
+            .sort({ createdAt: 1 }) // sort ascending to get chronological order
+            .toArray();
+        return JSON.parse(JSON.stringify(logs));
+    } catch (error) {
+        console.error("Failed to fetch user's chat history:", error);
+        return [];
+    }
+}
+
 
 export async function getAiLogs(page: number, search: string) {
     noStore();

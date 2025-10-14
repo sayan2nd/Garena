@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent, useEffect, useCallback } from 'react';
 import { Bot, Loader2, Send, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,20 +14,64 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { askQuestion } from '@/app/actions';
+import { askQuestion, getChatHistory } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
+import { type AiLog } from '@/lib/definitions';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  timestamp?: Date;
 }
+
+const FormattedDate = ({ date }: { date?: Date }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || !date) return null;
+
+    const d = new Date(date);
+    return d.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
+}
+
 
 export default function FaqChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const fetchHistory = useCallback(async () => {
+    setIsHistoryLoading(true);
+    const historyLogs = await getChatHistory();
+    const formattedHistory: Message[] = historyLogs.flatMap(log => [
+        { role: 'user', content: log.question, timestamp: new Date(log.createdAt) },
+        { role: 'assistant', content: log.answer, timestamp: new Date(log.createdAt) }
+    ]);
+    setMessages(formattedHistory);
+    setIsHistoryLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchHistory();
+    } else {
+      setMessages([]); // Clear messages when closing
+    }
+  }, [isOpen, fetchHistory]);
+
+  useEffect(() => {
+      // Scroll to bottom when messages update
+      if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+      }
+  }, [messages, isHistoryLoading]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,16 +80,21 @@ export default function FaqChatbot() {
     if (!question || isLoading) return;
 
     setIsLoading(true);
-    setMessages((prev) => [...prev, { role: 'user', content: question }]);
+    const userMessage: Message = { role: 'user', content: question, timestamp: new Date() };
+    setMessages((prev) => [...prev, userMessage]);
 
     if (inputRef.current) {
       inputRef.current.value = '';
     }
+    
+    // Prepare history for the AI
+    const historyForAI = messages.map(m => ({ role: m.role, content: m.content }));
 
-    const result = await askQuestion({ question });
+    const result = await askQuestion({ question, history: historyForAI });
 
     if (result.success && result.answer) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: result.answer! }]);
+      const assistantMessage: Message = { role: 'assistant', content: result.answer!, timestamp: new Date() };
+      setMessages((prev) => [...prev, assistantMessage]);
     } else {
       toast({
         variant: 'destructive',
@@ -79,39 +128,48 @@ export default function FaqChatbot() {
             Have a question? Ask me anything about our services. For example: "How long do redeem codes take?"
           </SheetDescription>
         </SheetHeader>
-        <ScrollArea className="flex-grow pr-4 -mr-6 mb-4">
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-2 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-xs lg:max-w-md rounded-xl p-3 text-sm ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
-                >
-                  {message.content}
+        <div className="flex-grow mb-4 overflow-hidden">
+            <ScrollArea className="h-full pr-4 -mr-6" ref={scrollAreaRef}>
+             {isHistoryLoading ? (
+                 <div className="flex justify-center items-center h-full">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                 </div>
+             ) : (
+                <div className="space-y-4">
+                    {messages.map((message, index) => (
+                    <div
+                        key={index}
+                        className={`flex flex-col gap-1 ${
+                        message.role === 'user' ? 'items-end' : 'items-start'
+                        }`}
+                    >
+                        <div
+                        className={`max-w-xs lg:max-w-md rounded-xl p-3 text-sm ${
+                            message.role === 'user'
+                            ? 'bg-primary text-primary-foreground rounded-br-none'
+                            : 'bg-muted rounded-bl-none'
+                        }`}
+                        >
+                        {message.content}
+                        </div>
+                        <p className="text-xs text-muted-foreground px-1"><FormattedDate date={message.timestamp} /></p>
+                    </div>
+                    ))}
+                    {isLoading && (
+                    <div className="flex justify-start gap-2">
+                        <div className="bg-muted rounded-xl p-3">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        </div>
+                    </div>
+                    )}
                 </div>
-              </div>
-            ))}
-             {isLoading && (
-              <div className="flex justify-start gap-2">
-                <div className="bg-muted rounded-xl p-3">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                </div>
-              </div>
             )}
-          </div>
-        </ScrollArea>
+            </ScrollArea>
+        </div>
         <SheetFooter>
           <form onSubmit={handleSubmit} className="flex w-full space-x-2">
-            <Input ref={inputRef} placeholder="Ask a question..." disabled={isLoading} />
-            <Button type="submit" size="icon" disabled={isLoading}>
+            <Input ref={inputRef} placeholder="Ask a question..." disabled={isLoading || isHistoryLoading} />
+            <Button type="submit" size="icon" disabled={isLoading || isHistoryLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>

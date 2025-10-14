@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -54,6 +54,17 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
         setPage(1);
     }, [initialLogs, initialHasMore]);
 
+    // Group logs by gamingId
+    const conversations = useMemo(() => {
+        return logs.reduce((acc, log) => {
+            if (!acc[log.gamingId]) {
+                acc[log.gamingId] = [];
+            }
+            acc[log.gamingId].push(log);
+            return acc;
+        }, {} as Record<string, AiLog[]>);
+    }, [logs]);
+
     const handleLoadMore = async () => {
         startTransition(async () => {
             const nextPage = page + 1;
@@ -93,7 +104,7 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                          <div className="flex items-center gap-2">
                            <CardTitle>AI Conversation Logs</CardTitle>
-                           <Badge variant="secondary" className="text-sm">{totalLogs}</Badge>
+                           <Badge variant="secondary" className="text-sm">{totalLogs} Messages</Badge>
                         </div>
                         <form onSubmit={handleSearch} className="flex items-center gap-2">
                             <Input name="search" placeholder="Search by Gaming ID..." defaultValue={search} className="w-56"/>
@@ -103,59 +114,42 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
                      <CardDescription>View the conversations users are having with the FAQ chatbot.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {logs.length === 0 ? (
+                    {Object.keys(conversations).length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">No AI logs to display.</p>
                     ) : (
-                        <div className="space-y-4">
-                            {logs.map(log => (
-                                <Card key={log._id.toString()} className="overflow-hidden">
-                                    <CardHeader className="flex flex-row justify-between items-start bg-muted/50 p-4">
-                                        <div>
-                                            <CardTitle className="text-base font-mono">{log.gamingId}</CardTitle>
-                                            <CardDescription className="text-xs mt-1">
-                                                <FormattedDate dateString={log.createdAt as unknown as string} />
-                                            </CardDescription>
+                        <Accordion type="multiple" className="w-full space-y-4">
+                            {Object.entries(conversations).map(([gamingId, messages]) => (
+                               <Card key={gamingId} className="overflow-hidden">
+                                 <AccordionItem value={gamingId} className="border-b-0">
+                                    <AccordionTrigger className="p-4 bg-muted/50 hover:no-underline">
+                                       <div className="flex justify-between items-center w-full">
+                                            <div >
+                                                <h3 className="font-mono font-semibold text-left">{gamingId}</h3>
+                                                <p className="text-xs text-muted-foreground text-left">{messages.length} messages</p>
+                                            </div>
+                                       </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="p-4">
+                                        <div className="space-y-4">
+                                            {messages.map(log => (
+                                                <div key={log._id.toString()}>
+                                                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                                        <p className="font-semibold text-blue-800">User:</p>
+                                                        <p>{log.question}</p>
+                                                        <p className="text-xs text-blue-600 mt-1"><FormattedDate dateString={log.createdAt as unknown as string} /></p>
+                                                    </div>
+                                                    <div className="p-3 mt-2 rounded-lg bg-gray-50 border">
+                                                        <p className="font-semibold text-gray-800">Assistant:</p>
+                                                        <p>{log.answer}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="p-4">
-                                       <Accordion type="single" collapsible className="w-full">
-                                          <AccordionItem value="item-1">
-                                            <AccordionTrigger className="text-left"><strong>User's Question:</strong> {log.question}</AccordionTrigger>
-                                            <AccordionContent>
-                                              <div className="prose prose-sm max-w-none text-foreground p-4 bg-muted rounded-md">
-                                                <p><strong>AI's Answer:</strong></p>
-                                                <p>{log.answer}</p>
-                                              </div>
-                                            </AccordionContent>
-                                          </AccordionItem>
-                                        </Accordion>
-                                    </CardContent>
-                                    <CardFooter className="flex justify-end p-2 bg-muted/50">
-                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="destructive" size="icon" disabled={isPending}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This action cannot be undone. This will permanently delete this conversation log.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(log._id.toString())} disabled={isPending}>
-                                                        {isPending ? 'Deleting...' : 'Delete'}
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </CardFooter>
-                                </Card>
+                                    </AccordionContent>
+                                </AccordionItem>
+                               </Card>
                             ))}
-                        </div>
+                        </Accordion>
                     )}
                 </CardContent>
             </Card>

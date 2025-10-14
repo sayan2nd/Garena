@@ -11,10 +11,16 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const MessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+});
+
 const CustomerFAQChatbotInputSchema = z.object({
   question: z
     .string()
     .describe('The customer support question. Be specific about order delays due to redeem code processing.'),
+  history: z.array(MessageSchema).optional().describe('The previous conversation history.'),
 });
 export type CustomerFAQChatbotInput = z.infer<typeof CustomerFAQChatbotInputSchema>;
 
@@ -41,8 +47,19 @@ const prompt = ai.definePrompt({
   5.  If a user asks about their login history, instruct them to go to the Privacy Policy page and scroll to the bottom to find the "View Login History" button.
   6.  To receive their coin reward, users must watch the entire advertisement.
   7.  If a user asks how to install the app, instruct them to tap their browser's menu button and select the 'Add to Home Screen' or 'Install App' option.
+  8.  Use the provided conversation history to understand the context of the user's question.
 
   ---
+  **Conversation History:**
+  {{#if history}}
+    {{#each history}}
+      **{{role}}**: {{content}}
+    {{/each}}
+  {{else}}
+    No previous conversation history.
+  {{/if}}
+  ---
+
   **About Us Context:**
 
   Welcome to Garena, the premier online shop for Free Fire players worldwide. As an official venture of Garena, headquartered in the vibrant tech hub of Singapore, we are dedicated to enhancing your gaming experience by providing a seamless and secure platform to purchase in-game items at unbeatable prices.
@@ -124,7 +141,7 @@ const prompt = ai.definePrompt({
   
   ---
 
-  Now, please answer the following user question:
+  Now, please answer the following user question based on the conversation history and provided context:
   "{{question}}"`});
 
 const customerFAQChatbotFlow = ai.defineFlow(
