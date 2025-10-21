@@ -9,6 +9,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1299,6 +1300,9 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         updateData.liveStockStart = new Date();
     } else {
         updateData.$unset = { liveStock: "", liveStockInterval: "", liveStockStart: "" };
+        // Remove from the main update object to prevent conflict
+        delete updateData.liveStock;
+        delete updateData.liveStockInterval;
     }
 
 
