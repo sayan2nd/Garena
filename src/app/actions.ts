@@ -5,6 +5,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1250,7 +1251,15 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     const onlyUpi = rawFormData.onlyUpi === 'on';
     const oneTimeBuy = rawFormData.oneTimeBuy === 'on';
     const isComingSoon = rawFormData.isComingSoon === 'on';
-    const endDate = data.endDate ? new Date(data.endDate) : undefined;
+    
+    let endDate: Date | undefined = undefined;
+    if (data.endDate) {
+        // The input string is like '2024-07-29T14:30'. The browser sends it without timezone info.
+        // We assume it's Indian Standard Time, so we need to construct the date carefully.
+        const dateString = `${data.endDate}:00.000+05:30`;
+        endDate = new Date(dateString);
+    }
+    
     const isCoinProduct = data.isCoinProduct === 'true';
     const visibleToList = data.visibility === 'custom' && data.visibleTo
         ? data.visibleTo.split(',').map(id => id.trim()).filter(id => id)
