@@ -134,7 +134,7 @@ export default function FaqChatbot() {
       <SheetTrigger asChild>
         <Button
           size="lg"
-          className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/90 transition-transform duration-300 hover:scale-110"
+          className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/90 transition-transform duration-300 hover:scale-110 z-20"
           aria-label="Open FAQ Chatbot"
         >
           <Bot className="w-8 h-8" />
