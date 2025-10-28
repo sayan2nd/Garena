@@ -64,6 +64,7 @@ export interface Product {
     liveStock?: number;
     liveStockInterval?: number;
     liveStockStart?: Date;
+    liveStockIncreases?: boolean;
 }
 
 export interface Order {

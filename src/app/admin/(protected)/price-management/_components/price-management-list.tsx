@@ -284,14 +284,20 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
 
                 <div className="lg:col-span-4 border-t pt-4">
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2"><Clock /> Live Availability (Optional)</h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 items-end">
                         <div className="space-y-2">
                             <Label htmlFor={`liveStock-${product._id}`}>Live Stock</Label>
                             <Input id={`liveStock-${product._id}`} name="liveStock" type="number" defaultValue={product.liveStock} placeholder="e.g., 100" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor={`liveStockInterval-${product._id}`}>Decrease Interval (sec)</Label>
+                            <Label htmlFor={`liveStockInterval-${product._id}`}>Interval (sec)</Label>
                             <Input id={`liveStockInterval-${product._id}`} name="liveStockInterval" type="number" step="any" defaultValue={product.liveStockInterval} placeholder="e.g., 0.5" />
+                        </div>
+                        <div className="col-span-2 flex items-center space-x-2">
+                            <Checkbox id={`liveStockIncreases-${product._id}`} name="liveStockIncreases" defaultChecked={product.liveStockIncreases} />
+                            <Label htmlFor={`liveStockIncreases-${product._id}`} className="text-sm font-medium leading-none cursor-pointer">
+                              Increase instead of decrease
+                            </Label>
                         </div>
                     </div>
                 </div>

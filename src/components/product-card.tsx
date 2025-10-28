@@ -15,7 +15,7 @@ import {
 import { useState, useEffect } from 'react';
 import PurchaseModal from './purchase-modal';
 import type { Product, User, UserProductControl, Order } from '@/lib/definitions';
-import { Ban, Coins, Timer, CheckCircle2, Lock, PackageCheck } from 'lucide-react';
+import { Ban, Coins, Timer, CheckCircle2, Lock, PackageCheck, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { type ObjectId } from 'mongodb';
@@ -39,46 +39,64 @@ const LiveStock = ({ product }: { product: Product }) => {
             return;
         }
 
-        // Set initial stock immediately
-        const initialElapsedSeconds = (new Date().getTime() - new Date(product.liveStockStart).getTime()) / 1000;
-        const initialStockDecreased = Math.floor(initialElapsedSeconds / product.liveStockInterval);
-        const initialTrueStock = Math.max(0, product.liveStock - initialStockDecreased);
-        setDisplayStock(initialTrueStock);
-
-
-        const calculateSmartStock = () => {
-            const now = new Date();
-            const start = new Date(product.liveStockStart!);
-            const elapsedSeconds = (now.getTime() - start.getTime()) / 1000;
-            const stockDecreased = Math.floor(elapsedSeconds / product.liveStockInterval!);
-            const trueStock = Math.max(0, product.liveStock! - stockDecreased);
-
-            setDisplayStock(currentDisplayStock => {
-                // If display is lagging, catch it up quickly.
-                if (currentDisplayStock > trueStock + 5) {
-                    return Math.max(trueStock, currentDisplayStock - Math.floor(Math.random() * 3) - 1);
-                }
-
-                // Never let displayed stock go below true stock
-                if (currentDisplayStock <= trueStock) {
-                    return trueStock;
-                }
-
-                // Random chance to pause, decrease by 1, 2, or 3
-                const randomAction = Math.random();
-                if (randomAction < 0.25) { // 25% chance to pause
-                    return currentDisplayStock;
-                } else if (randomAction < 0.85) { // 60% chance to decrease by 1
-                    return Math.max(trueStock, currentDisplayStock - 1);
-                } else { // 15% chance to decrease by 2 or 3
-                    const dropAmount = Math.random() < 0.7 ? 2 : 3;
-                    return Math.max(trueStock, currentDisplayStock - dropAmount);
-                }
-            });
+        const calculateCurrentStock = () => {
+            const elapsedSeconds = (new Date().getTime() - new Date(product.liveStockStart!).getTime()) / 1000;
+            if (product.liveStockIncreases) {
+                const stockIncreased = Math.floor(elapsedSeconds / product.liveStockInterval!);
+                return Math.max(0, product.liveStock! + stockIncreased);
+            } else {
+                const stockDecreased = Math.floor(elapsedSeconds / product.liveStockInterval!);
+                return Math.max(0, product.liveStock! - stockDecreased);
+            }
         };
 
+        // Set initial stock immediately
+        const initialStock = calculateCurrentStock();
+        setDisplayStock(initialStock);
+
+        const calculateSmartStock = () => {
+            const trueStock = calculateCurrentStock();
+
+            if (product.liveStockIncreases) {
+                setDisplayStock(currentDisplayStock => {
+                    if (currentDisplayStock < trueStock - 5) {
+                        return Math.min(trueStock, currentDisplayStock + Math.floor(Math.random() * 3) + 1);
+                    }
+                     if (currentDisplayStock >= trueStock) {
+                        return trueStock;
+                    }
+                    const randomAction = Math.random();
+                    if (randomAction < 0.25) { // Pause
+                        return currentDisplayStock;
+                    } else if (randomAction < 0.85) { // Increase by 1
+                        return Math.min(trueStock, currentDisplayStock + 1);
+                    } else { // Increase by 2 or 3
+                        const jumpAmount = Math.random() < 0.7 ? 2 : 3;
+                        return Math.min(trueStock, currentDisplayStock + jumpAmount);
+                    }
+                });
+            } else {
+                 setDisplayStock(currentDisplayStock => {
+                    if (currentDisplayStock > trueStock + 5) {
+                        return Math.max(trueStock, currentDisplayStock - Math.floor(Math.random() * 3) - 1);
+                    }
+                    if (currentDisplayStock <= trueStock) {
+                        return trueStock;
+                    }
+                    const randomAction = Math.random();
+                    if (randomAction < 0.25) { 
+                        return currentDisplayStock;
+                    } else if (randomAction < 0.85) { 
+                        return Math.max(trueStock, currentDisplayStock - 1);
+                    } else { 
+                        const dropAmount = Math.random() < 0.7 ? 2 : 3;
+                        return Math.max(trueStock, currentDisplayStock - dropAmount);
+                    }
+                });
+            }
+        };
+        
         calculateSmartStock();
-        // Use a faster interval for smoother, more dynamic updates
         const updateInterval = Math.min(Math.max(product.liveStockInterval * 1000, 200), 1000);
         const timer = setInterval(calculateSmartStock, updateInterval);
 
@@ -87,6 +105,15 @@ const LiveStock = ({ product }: { product: Product }) => {
 
     if (!isMounted || !product.liveStock) {
         return null;
+    }
+    
+    if (product.liveStockIncreases) {
+        return (
+            <p className="text-sm text-blue-600 font-bold flex items-center gap-2">
+                <UserIcon className="w-4 h-4"/>
+                {displayStock} people purchased
+            </p>
+        );
     }
 
     if (displayStock <= 0) {
@@ -194,7 +221,7 @@ export default function ProductCard({ product, user, orders, control }: ProductC
   
   const getBuyButton = () => {
     let isLiveStockSoldOut = false;
-    if (product.liveStock && product.liveStockStart && product.liveStockInterval) {
+    if (product.liveStock && product.liveStockStart && product.liveStockInterval && !product.liveStockIncreases) {
         const elapsedSeconds = (new Date().getTime() - new Date(product.liveStockStart).getTime()) / 1000;
         const stockDecreased = Math.floor(elapsedSeconds / product.liveStockInterval);
         isLiveStockSoldOut = (product.liveStock - stockDecreased) <= 0;

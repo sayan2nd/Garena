@@ -11,6 +11,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1217,6 +1218,7 @@ const productUpdateSchema = z.object({
   tagColor: z.enum(['green', 'red']).optional(),
   liveStock: z.coerce.number().optional(),
   liveStockInterval: z.coerce.number().optional(),
+  liveStockIncreases: z.enum(['on', 'off']).optional(),
 }).refine(
     (data) => {
         if (data.isCoinProduct === 'true') {
@@ -1260,6 +1262,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     const onlyUpi = rawFormData.onlyUpi === 'on';
     const oneTimeBuy = rawFormData.oneTimeBuy === 'on';
     const isComingSoon = rawFormData.isComingSoon === 'on';
+    const liveStockIncreases = rawFormData.liveStockIncreases === 'on';
     
     let endDate: Date | undefined = undefined;
     if (data.endDate) {
@@ -1297,15 +1300,17 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         tagColor: data.tagColor,
         liveStock: data.liveStock,
         liveStockInterval: data.liveStockInterval,
+        liveStockIncreases,
     };
     
     if (data.liveStock && data.liveStockInterval && data.liveStock > 0 && data.liveStockInterval > 0) {
         updateData.liveStockStart = new Date();
     } else {
-        updateData.$unset = { liveStock: "", liveStockInterval: "", liveStockStart: "" };
+        updateData.$unset = { liveStock: "", liveStockInterval: "", liveStockStart: "", liveStockIncreases: "" };
         // Remove from the main update object to prevent conflict
         delete updateData.liveStock;
         delete updateData.liveStockInterval;
+        delete updateData.liveStockIncreases;
     }
 
 
