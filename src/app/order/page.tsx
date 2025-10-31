@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import ProductMedia from '@/components/product-media';
 
 
 const FormattedDate = ({ dateString }: { dateString: string }) => {
@@ -122,8 +123,8 @@ export default function OrderPage() {
                 </Badge>
               </CardHeader>
               <CardContent className="p-4 flex-grow">
-                <div className="relative aspect-video w-full">
-                    <Image src={order.productImageUrl} alt={order.productName} fill className="object-cover rounded-md" />
+                <div className="relative aspect-video w-full rounded-md overflow-hidden">
+                    <ProductMedia src={order.productImageUrl} alt={order.productName} />
                 </div>
                  <div className="mt-4 space-y-1 text-sm">
                     <div className="flex justify-between">

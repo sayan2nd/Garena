@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { checkPurchaseEligibility } from '@/app/actions/check-purchase-eligibility';
 import { useRefresh } from '@/context/RefreshContext';
 import { cn } from '@/lib/utils';
+import ProductMedia from './product-media';
 
 // The product passed to this modal has its _id serialized to a string
 interface ProductWithStringId extends Omit<Product, '_id'> {
@@ -263,7 +264,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
             <div className="space-y-6">
                 <div className="flex items-center gap-4 p-4 rounded-lg bg-muted">
                     <div className="relative w-24 h-24 rounded-md overflow-hidden">
-                        <Image src={product.imageUrl} alt={product.name} fill className="object-cover"/>
+                        <ProductMedia src={product.imageUrl} alt={product.name} />
                     </div>
                     <div>
                         <h3 className="font-semibold">{product.name}</h3>
