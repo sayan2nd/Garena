@@ -36,6 +36,60 @@ const FormattedDate = ({ dateString }: { dateString: string }) => {
     });
 }
 
+const NotificationMedia = ({ src, alt }: { src: string; alt: string }) => {
+  const isVideo = src.endsWith('.mp4') || src.endsWith('.webm');
+
+  if (isVideo) {
+    return (
+      <video
+        src={src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      className="object-cover"
+    />
+  );
+};
+
+const ClickableMessage = ({ message }: { message: string }) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = message.split(urlRegex);
+
+  return (
+    <p className="text-sm">
+      {parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </p>
+  );
+};
+
+
 export default function NotificationList({ initialNotifications, initialHasMore, totalNotifications }: NotificationListProps) {
   const [notifications, setNotifications] = useState(initialNotifications);
   const [page, setPage] = useState(1);
@@ -134,10 +188,10 @@ export default function NotificationList({ initialNotifications, initialHasMore,
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">{notification.message}</p>
+                  <ClickableMessage message={notification.message} />
                    {notification.imageUrl && (
                     <div className="mt-4 relative aspect-video w-full max-w-sm rounded-md overflow-hidden">
-                        <Image src={notification.imageUrl} alt="Notification Image" layout="fill" className="object-cover"/>
+                        <NotificationMedia src={notification.imageUrl} alt="Notification media" />
                     </div>
                    )}
                 </CardContent>

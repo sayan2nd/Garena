@@ -17,6 +17,23 @@ interface EventManagerProps {
   initialEvents: Event[];
 }
 
+const EventMedia = ({ src }: { src: string }) => {
+    const isVideo = src.endsWith('.mp4') || src.endsWith('.webm');
+    if (isVideo) {
+        return (
+            <video
+                src={src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+            />
+        );
+    }
+    return <Image src={src} alt="Event Image" layout="fill" className="object-cover" />;
+}
+
 export default function EventManager({ initialEvents }: EventManagerProps) {
   const [events, setEvents] = useState(initialEvents);
   const [isPending, startTransition] = useTransition();
@@ -99,7 +116,7 @@ export default function EventManager({ initialEvents }: EventManagerProps) {
               <Card key={event._id.toString()} className="overflow-hidden group">
                 <CardContent className="p-0">
                   <div className="relative aspect-video">
-                    <Image src={event.imageUrl} alt="Event Image" layout="fill" className="object-cover" />
+                    <EventMedia src={event.imageUrl} />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                        <AlertDialog>
                           <AlertDialogTrigger asChild>

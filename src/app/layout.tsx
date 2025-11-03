@@ -52,7 +52,7 @@ export default function RootLayout({
         const eventsSeen = sessionStorage.getItem('eventsSeen');
         if (!eventsSeen) {
           setEvents(allEvents);
-          if(allEvents.length > 0) {
+          if(userData && allEvents.length > 0) {
               setShowEventModal(true);
           }
         }

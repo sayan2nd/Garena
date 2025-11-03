@@ -66,6 +66,7 @@ const prompt = ai.definePrompt({
   14. **Unauthorized Purchases:** If a user manages to purchase an item that is expired, unavailable, or otherwise not intended for them, you must inform them that this action violates the store's Terms & Conditions and Privacy Policy. The item will not be delivered, and their account may be suspended.
   15. **Special Products:** If a product card has a tag on it (like "Top Deal", "Hot", etc.), it is considered a special product or promotion.
   16. **Server Detection:** If a user asks why they cannot see a server selection dropdown menu on the purchase details page, you must inform them that the server is automatically detected based on their IP address.
+  17. **Item Availability for Events:** If a user asks about an item from a new in-game event that they can't find in the store, inform them that it can sometimes take up to 2 days for new event items to appear. Explain that item availability is managed by the administration, and not all in-game items may be sold in the store.
 
   ---
   **User Information:**
@@ -196,3 +197,4 @@ const customerFAQChatbotFlow = ai.defineFlow(
 
 
     
+

@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { registerGamingId } from '@/app/actions';
-import { Loader2, ShieldAlert, Mail } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import { useIsMobile } from '@/hooks/use-mobile';
 import WelcomeAnimation from './welcome-animation';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import BannedNotice from './banned-notice';
 
 interface GamingIdModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ interface GamingIdModalProps {
 export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalProps) {
   const [gamingId, setGamingId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [bannedInfo, setBannedInfo] = useState<{ message: string } | null>(null);
+  const [bannedInfo, setBannedInfo] = useState<{ message: string, id: string } | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState<{coins?: number} | null>(null);
   const [isShifted, setIsShifted] = useState(false);
   const { toast } = useToast();
@@ -61,37 +61,13 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
         setRegistrationSuccess({});
       }
     } else if (result.isBanned) {
-      setBannedInfo({ message: result.banMessage || 'Your account has been suspended.' });
-      setIsLoading(false);
+      setBannedInfo({ message: result.banMessage || 'Your account has been suspended.', id: gamingId });
+      onOpenChange(false); // Close the registration modal
     } else {
       setIsLoading(false);
     }
   };
   
-  const handleUnbanRequest = () => {
-    const recipient = 'garenaffmaxstore@gmail.com';
-    const subject = `Unban Request - Gaming ID: ${gamingId}`;
-    const body = `
-Dear Garena Support,
-
-I am writing to request that my account be unbanned.
-
-My Gaming ID is: ${gamingId}
-
-Reason for request:
-
-
-Thank you for your consideration.
-    `;
-    if (isMobile) {
-      const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailtoLink;
-    } else {
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(gmailUrl, '_blank');
-    }
-  }
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     // Only allow digits by replacing any non-digit character with an empty string
@@ -104,7 +80,6 @@ Thank you for your consideration.
   
   const handleOpenChangeWithReset = (open: boolean) => {
     if (!open) {
-        setBannedInfo(null);
         setGamingId('');
         setIsShifted(false);
     }
@@ -116,61 +91,56 @@ Thank you for your consideration.
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChangeWithReset}>
-      <DialogContent
-        className={cn(
-          'sm:max-w-md transition-all duration-300 ease-in-out',
-          isMobile && isShifted && 'top-[41%]'
-        )}
-      >
-        {bannedInfo ? (
-            <>
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-headline flex items-center gap-2"><ShieldAlert className="text-destructive"/> Account Suspended</DialogTitle>
-                </DialogHeader>
-                 <Alert variant="destructive">
-                    <AlertTitle>Access Denied</AlertTitle>
-                    <AlertDescription>
-                        {bannedInfo.message}
-                    </AlertDescription>
-                </Alert>
-                <DialogFooter>
-                    <Button onClick={handleUnbanRequest} variant="outline" className="w-full">
-                        <Mail className="mr-2"/>
-                        Request Unban
-                    </Button>
-                </DialogFooter>
-            </>
-        ) : (
-             <>
-                <DialogHeader>
-                <DialogTitle className="text-2xl font-headline">Welcome to Garena Store</DialogTitle>
-                <DialogDescription>
-                    Please enter your Free Fire Gaming ID to get started and receive your welcome bonus!
-                </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                    <Label htmlFor="gaming-id-register">Gaming ID</Label>
-                    <Input
-                    id="gaming-id-register"
-                    placeholder="Your in-game user ID"
-                    value={gamingId}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                    type="tel"
-                    pattern="[0-9]*"
-                    minLength={8}
-                    maxLength={11}
-                    />
-                </div>
-                <Button onClick={handleRegister} className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : 'Continue & get 800 coins'}
-                </Button>
-                </div>
-            </>
-        )}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleOpenChangeWithReset}>
+        <DialogContent
+          className={cn(
+            'sm:max-w-md transition-all duration-300 ease-in-out',
+            isMobile && isShifted && 'top-[41%]'
+          )}
+          onOpenAutoFocus={(e) => {
+            if (isMobile) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader>
+          <DialogTitle className="text-2xl font-headline">Welcome to Garena Store</DialogTitle>
+          <DialogDescription>
+              Please enter your Free Fire Gaming ID to get started and receive your welcome bonus!
+          </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+          <div className="space-y-2">
+              <Label htmlFor="gaming-id-register">Gaming ID</Label>
+              <Input
+                id="gaming-id-register"
+                placeholder="Your in-game user ID"
+                value={gamingId}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                type="tel"
+                pattern="[0-9]*"
+                minLength={8}
+                maxLength={11}
+                className={cn(
+                  isMobile && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                )}
+              />
+          </div>
+          <Button onClick={handleRegister} className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Continue & get 800 coins'}
+          </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <BannedNotice 
+        isOpen={!!bannedInfo}
+        onOpenChange={(open) => !open && setBannedInfo(null)}
+        gamingId={bannedInfo?.id || ''}
+        banMessage={bannedInfo?.message || ''}
+      />
+    </>
   );
 }

@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { type ObjectId } from 'mongodb';
 import ProductTag from './product-tag';
 import ProductMedia from './product-media';
+import GamingIdModal from './gaming-id-modal';
 
 
 interface ProductCardProps {
@@ -199,7 +200,8 @@ const CountdownTimer = ({ endDate, isComingSoon }: { endDate: Date; isComingSoon
 
 
 export default function ProductCard({ product, user, orders, control }: ProductCardProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const { toast } = useToast();
 
   const finalPrice = product.isCoinProduct 
@@ -213,9 +215,10 @@ export default function ProductCard({ product, user, orders, control }: ProductC
             title: 'Please Register',
             description: 'You need to enter your Gaming ID to make a purchase.',
         });
+        setIsRegisterModalOpen(true);
         return;
     }
-    setIsModalOpen(true);
+    setIsPurchaseModalOpen(true);
   }
 
   const productWithStrId = { ...product, _id: product._id.toString() };
@@ -311,7 +314,8 @@ export default function ProductCard({ product, user, orders, control }: ProductC
           </CardFooter>
         </Card>
       </div>
-      {isModalOpen && <PurchaseModal product={productWithStrId} user={user} onClose={() => setIsModalOpen(false)} />}
+      {isPurchaseModalOpen && <PurchaseModal product={productWithStrId} user={user} onClose={() => setIsPurchaseModalOpen(false)} />}
+      <GamingIdModal isOpen={isRegisterModalOpen} onOpenChange={setIsRegisterModalOpen} />
     </>
   );
 }
