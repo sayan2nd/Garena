@@ -12,7 +12,7 @@ export default function AboutPage() {
 
           <div className="prose prose-lg max-w-none text-foreground space-y-6">
             <p>
-              Welcome to <strong>Garena</strong>, the premier online shop for Free Fire players worldwide. As an official venture of Garena, headquartered in the vibrant tech hub of Singapore, we are dedicated to enhancing your gaming experience by providing a seamless and secure platform to purchase in-game items at unbeatable prices.
+              Welcome to <strong>Garena</strong>, the premier online shop for Free Fire players worldwide. As an official venture of Garena, headquartered in the vibrant tech hub of Singapore, we are dedicated to enhancing your gaming experience by providing a seamless and secure platform to purchase in-game items at unbeatable prices. With sub-offices in major continents, our global presence allows us to serve our diverse community effectively.
             </p>
             <h2 className="font-headline text-3xl font-semibold !mt-12 !mb-4">Our Mission</h2>
             <p>
@@ -42,3 +42,5 @@ export default function AboutPage() {
     </div>
   );
 }
+
+    

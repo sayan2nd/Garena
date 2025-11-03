@@ -102,12 +102,18 @@ export default {
                 transform: 'translateY(0)',
             },
         },
+        'radar-sweep': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
+      
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'progress-smooth': 'progress-smooth var(--duration, 30s) linear forwards',
         'slide-in-up': 'slide-in-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+        'radar-sweep': 'radar-sweep 2s linear infinite',
       },
     },
   },

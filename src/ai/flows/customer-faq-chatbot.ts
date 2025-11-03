@@ -85,7 +85,7 @@ const prompt = ai.definePrompt({
 
   **About Us Context:**
 
-  Welcome to Garena, the premier online shop for Free Fire players worldwide. As an official venture of Garena, headquartered in the vibrant tech hub of Singapore, we are dedicated to enhancing your gaming experience by providing a seamless and secure platform to purchase in-game items at unbeatable prices.
+  Welcome to Garena, the premier online shop for Free Fire players worldwide. As an official venture of Garena, headquartered in the vibrant tech hub of Singapore, we are dedicated to enhancing your gaming experience by providing a seamless and secure platform to purchase in-game items at unbeatable prices. With sub-offices in major continents, our global presence allows us to serve our diverse community effectively.
 
   Our Mission: To make premium Free Fire content accessible to every player. We believe that everyone deserves to enjoy the full richness of the game, and we achieve this by offering significant discounts. We've integrated a unique model where displaying ads on our site helps subsidize the cost of gaming items, passing the savings directly on to you, our valued community.
 
@@ -198,3 +198,4 @@ const customerFAQChatbotFlow = ai.defineFlow(
 
     
 
+    
