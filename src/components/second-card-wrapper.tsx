@@ -1,3 +1,4 @@
+
 'use client';
 
 import SecondCardDecoration from './second-card-decoration';
@@ -8,7 +9,10 @@ interface SecondCardWrapperProps {
 }
 
 export default function SecondCardWrapper({ children, index }: SecondCardWrapperProps) {
-  if (index === 33) { // Apply to the second card (index is 0-based)
+  // Card numbers 26, 27, 28, 29, 30, 31 correspond to 0-based indices 25, 26, 27, 28, 29, 30
+  const targetIndices = [25, 26, 27, 28, 29, 30];
+
+  if (targetIndices.includes(index)) {
     return (
       <div className="relative">
         <SecondCardDecoration />
