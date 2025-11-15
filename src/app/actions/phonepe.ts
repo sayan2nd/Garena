@@ -6,14 +6,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { type Product, type User } from '@/lib/definitions';
 import { ObjectId } from 'mongodb';
 import axios from 'axios';
-import { createHmac } from 'crypto';
+import { getPhonePeAuthToken } from '@/lib/phonepe-client';
 
-const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
-const PHONEPE_CLIENT_ID = process.env.PHONEPE_CLIENT_ID;
-const PHONEPE_CLIENT_SECRET = process.env.PHONEPE_CLIENT_SECRET;
-
-const PHONEPE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox"; // Use "https://api.phonepe.com/apis/hermes" for production
-const PHONEPE_PAY_API = "/pg/v1/pay";
+const PHONEPE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox";
+const PHONEPE_PAY_API = "/v1/pay";
 
 export async function createPhonePeOrder(
   amount: number,
@@ -23,9 +19,9 @@ export async function createPhonePeOrder(
 ) {
   noStore();
 
-  if (!PHONEPE_MERCHANT_ID || !PHONEPE_CLIENT_ID || !PHONEPE_CLIENT_SECRET) {
-    console.error('PhonePe credentials are not configured.');
-    return { success: false, error: 'Payment gateway not configured.' };
+  const authToken = await getPhonePeAuthToken();
+  if (!authToken) {
+    return { success: false, error: 'Could not authenticate with PhonePe.' };
   }
 
   try {
@@ -37,7 +33,7 @@ export async function createPhonePeOrder(
     }
 
     const payload = {
-      merchantId: PHONEPE_MERCHANT_ID,
+      merchantId: process.env.PHONEPE_MERCHANT_ID,
       merchantTransactionId: transactionId,
       merchantUserId: user._id.toString(),
       amount: amount * 100, // Amount in paise
@@ -50,16 +46,13 @@ export async function createPhonePeOrder(
     };
     
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-    const checksum = createHmac('sha256', PHONEPE_CLIENT_SECRET!).update(base64Payload + PHONEPE_PAY_API + PHONEPE_CLIENT_SECRET!).digest('hex') + '###1';
 
     const options = {
       method: 'POST',
       url: `${PHONEPE_HOST_URL}${PHONEPE_PAY_API}`,
       headers: {
         'Content-Type': 'application/json',
-        'X-VERIFY': checksum,
-        'X-CLIENT-ID': PHONEPE_CLIENT_ID,
-        'X-MERCHANT-ID': PHONEPE_MERCHANT_ID,
+        'Authorization': `Bearer ${authToken}`,
         accept: 'application/json'
       },
       data: {
