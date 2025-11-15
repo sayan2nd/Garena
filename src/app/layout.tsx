@@ -19,6 +19,7 @@ import { RefreshProvider } from '@/context/RefreshContext';
 import BrowserRedirect from '@/components/browser-redirect';
 import { usePathname } from 'next/navigation';
 import BannedNotice from '@/components/banned-notice';
+import Head from 'next/head';
 
 
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -189,6 +190,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link rel="manifest" href="/manifest.json" />
+        <script src="https://mercury.phonepe.com/web/bundle/checkout.js" async></script>
       </head>
       <body className={cn('font-body antialiased flex flex-col min-h-screen')}>
         <BrowserRedirect />

@@ -40,6 +40,16 @@ interface PurchaseModalProps {
 
 type ModalStep = 'verifying' | 'register' | 'details' | 'processing' | 'success';
 
+declare global {
+  interface Window {
+    PhonePeCheckout?: {
+      transact: (options: { tokenUrl: string, type: 'IFRAME', callback: (response: any) => void }) => void;
+      closePage: () => void;
+    };
+  }
+}
+
+
 export default function PurchaseModal({ product, user: initialUser, onClose }: PurchaseModalProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [user, setUser] = useState<User | null>(initialUser);
@@ -109,6 +119,22 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   const finalPrice = product.isCoinProduct 
     ? product.purchasePrice || product.price 
     : product.price - coinsToUse;
+  
+  const handlePaymentCallback = useCallback((response: any) => {
+    if (response === 'USER_CANCEL') {
+      toast({
+        variant: 'destructive',
+        title: 'Payment Cancelled',
+        description: 'You cancelled the payment process.',
+      });
+    } else if (response === 'CONCLUDED') {
+        setStep('success');
+    }
+    setTimeout(() => {
+        router.push(`/order?orderId=${currentTransactionId}`);
+        handleClose();
+    }, 3000);
+  }, [handleClose, router, currentTransactionId, toast]);
 
   const handleBuyWithUpi = async () => {
     setIsLoading(true);
@@ -125,10 +151,17 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     const result = await createPhonePeOrder(finalPrice, user.gamingId, product._id, uniqueTransactionId);
 
     if (result.success && result.redirectUrl) {
-        router.push(result.redirectUrl);
+        if (window.PhonePeCheckout) {
+            window.PhonePeCheckout.transact({
+                tokenUrl: result.redirectUrl,
+                type: 'IFRAME',
+                callback: handlePaymentCallback
+            });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'PhonePe Checkout script not loaded. Please refresh.' });
+        }
     } else {
         toast({ variant: 'destructive', title: 'Payment Error', description: result.error || 'Could not create payment link.' });
-        handleClose();
     }
     setIsLoading(false);
   };
@@ -299,11 +332,11 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                         <Check className="w-16 h-16 text-white stroke-[3] animate-in zoom-in-50" />
                     </div>
                 </div>
-                <h2 className="text-2xl font-bold font-headline text-green-600 mb-2">Payment Successful!</h2>
-                <p className="text-muted-foreground mb-4">Congratulations! Your purchase has been processed.</p>
-                <p className="text-sm">You can check your <Button asChild variant="link" className="p-0"><Link href="/order">Order Page</Link></Button> for the delivery status.</p>
+                <h2 className="text-2xl font-bold font-headline text-green-600 mb-2">Payment Processing</h2>
+                <p className="text-muted-foreground mb-4">Your payment has been submitted. Please wait for confirmation.</p>
+                <p className="text-sm">You will be redirected to the order page shortly.</p>
                 <div className="w-full bg-gray-200 rounded-full h-1 mt-6 overflow-hidden">
-                    <div className="bg-green-500 h-1 rounded-full animate-progress-smooth" style={{'--duration': '5s'} as React.CSSProperties}></div>
+                    <div className="bg-green-500 h-1 rounded-full animate-progress-smooth" style={{'--duration': '3s', animationDelay: '0.5s', transform: 'translateX(-100%)'} as React.CSSProperties}></div>
                 </div>
             </div>
         );
