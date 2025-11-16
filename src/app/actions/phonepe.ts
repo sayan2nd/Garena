@@ -8,7 +8,7 @@ import { ObjectId } from 'mongodb';
 import axios from 'axios';
 import { getPhonePeAuthToken } from '@/lib/phonepe-client';
 
-const PHONEPE_HOST_URL = "https://api.phonepe.com/apis/pg";
+const PHONEPE_HOST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox";
 const PHONEPE_PAY_API = "/checkout/v2/pay";
 
 export async function createPhonePeOrder(
