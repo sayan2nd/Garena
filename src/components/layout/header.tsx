@@ -16,9 +16,10 @@ import Image from 'next/image';
 import type { User, Notification as NotificationType } from '@/lib/definitions';
 import NotificationBell from './notification-bell';
 import { logoutUser } from '@/app/actions';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 
 interface HeaderProps {
@@ -31,6 +32,7 @@ interface HeaderProps {
 export default function Header({ user, notifications, notificationKey, onNotificationRefresh }: HeaderProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -74,13 +76,13 @@ export default function Header({ user, notifications, notificationKey, onNotific
           <div className="flex items-center md:hidden">
              {notifications.length > 0 && <NotificationBell key={notificationKey} notifications={notifications} onRefresh={onNotificationRefresh} />}
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
+              <Link href="/" className={cn(pathname === '/' && 'text-primary')}>
                 <Home className="h-5 w-5" />
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/order">
+              <Link href="/order" className={cn(pathname === '/order' && 'text-primary')}>
                 <ShoppingCart className="h-5 w-5" />
                 <span className="sr-only">Order</span>
               </Link>
