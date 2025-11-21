@@ -35,6 +35,10 @@ export async function createPhonePeOrder(
     const payload = {
       merchantOrderId: transactionId,
       amount: amount * 100, // Amount in paise
+      metaInfo: {
+        udf1: gamingId,
+        udf2: product.name,
+      },
       paymentFlow: {
         type: "PG_CHECKOUT",
         merchantUrls: {
