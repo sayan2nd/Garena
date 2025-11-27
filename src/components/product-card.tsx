@@ -15,7 +15,7 @@ import {
 import { useState, useEffect } from 'react';
 import PurchaseModal from './purchase-modal';
 import type { Product, User, UserProductControl, Order } from '@/lib/definitions';
-import { Ban, Coins, Timer, CheckCircle2, Lock, PackageCheck, User as UserIcon } from 'lucide-react';
+import { Ban, Coins, Timer, CheckCircle2, Lock, PackageCheck, User as UserIcon, PackageX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { type ObjectId } from 'mongodb';
@@ -232,7 +232,7 @@ export default function ProductCard({ product, user, orders, control }: ProductC
     }
 
     if(isLiveStockSoldOut) {
-        return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />Sold Out</Button>;
+        return <Button className="w-full font-bold text-base" disabled variant="secondary"><PackageX className="mr-2 h-4 w-4" />Sold Out</Button>;
     }
 
 
@@ -243,11 +243,11 @@ export default function ProductCard({ product, user, orders, control }: ProductC
     }
     
     if (!product.isComingSoon && isEventActive === false && !product.isAvailable) {
-       return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />Expired</Button>;
+       return <Button className="w-full font-bold text-base" disabled variant="secondary"><PackageX className="mr-2 h-4 w-4" />Expired</Button>;
     }
     
     if (!product.isAvailable) {
-      return <Button className="w-full font-bold text-base" disabled variant="secondary"><Ban className="mr-2 h-4 w-4" />Item Unavailable</Button>;
+      return <Button className="w-full font-bold text-base" disabled variant="secondary"><PackageX className="mr-2 h-4 w-4" />Item Unavailable</Button>;
     }
 
     if (control?.type === 'block') {
