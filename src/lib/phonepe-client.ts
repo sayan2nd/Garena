@@ -4,7 +4,7 @@
 import axios from 'axios';
 import { URLSearchParams } from 'url';
 
-const PHONEPE_AUTH_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token";
+const PHONEPE_AUTH_URL = "https://api.phonepe.com/apis/identity-manager/v1/oauth/token";
 
 interface AuthToken {
   access_token: string;
