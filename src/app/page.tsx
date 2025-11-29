@@ -1,4 +1,5 @@
 
+
 import ImageSlider from '@/components/image-slider';
 import FaqChatbot from '@/components/faq-chatbot';
 import { getProducts, getUserData, getOrdersForUser, getUserProductControls } from './actions';
@@ -8,6 +9,7 @@ import CoinSystem from '@/components/coin-system';
 import { ObjectId } from 'mongodb';
 import ProductList from '@/components/product-list';
 import { getSliderImages } from './admin/(protected)/slider-management/actions';
+import MetaPixelTracker from '@/components/meta-pixel-tracker';
 
 
 export const metadata: Metadata = {
@@ -32,11 +34,22 @@ export default async function Home() {
   const controls: UserProductControl[] = user ? await getUserProductControls(user.gamingId) : [];
   const sliderImages: SliderImage[] = await getSliderImages();
 
-
   const productsWithStringId = products.map(p => ({...p, _id: p._id.toString()}));
+
+  // Find the most recent completed order that hasn't been tracked by the pixel yet
+  const untrackedPurchase = orders
+    .filter(order => order.status === 'Completed' && !order.isPixelTracked)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
 
   return (
     <div className="flex flex-col">
+      {untrackedPurchase && (
+          <MetaPixelTracker
+              orderId={untrackedPurchase._id.toString()}
+              price={untrackedPurchase.finalPrice}
+          />
+      )}
       <ImageSlider sliderImages={sliderImages} />
       <CoinSystem user={user} />
       <ProductList 

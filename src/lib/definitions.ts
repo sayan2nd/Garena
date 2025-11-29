@@ -86,6 +86,7 @@ export interface Order {
     isCoinProduct?: boolean;
     createdAt: Date;
     coinsAtTimeOfPurchase?: number; // Record user's coin balance at the time of purchase
+    isPixelTracked?: boolean; // Flag to check if the purchase has been tracked by Meta Pixel
 }
 
 export interface Withdrawal {
