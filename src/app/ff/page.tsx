@@ -2,11 +2,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import type { Metadata } from 'next';
 
-export default function BrowserRedirect() {
+export const metadata: Metadata = {
+  metadataBase: new URL('https://www.garenafreefire.store'),
+  title: 'Garena Store - Free Fire Top-Up & Diamonds',
+  description: 'The official, secure, and trusted Garena store for discounted Free Fire diamonds, memberships, and top-ups. Get unbeatable prices on in-game items for Free Fire MAX.',
+  keywords: [
+    'Free Fire top up', 'Free Fire MAX top up', 'Garena', 'Free Fire diamonds', 'top-up', 'garena free fire store', 'Garena free fire store', 'garenaff store', 'garenaff', 'in-game items', 'Garena Gears', 'buy Free Fire diamonds', 'Free Fire recharge', 'Garena top up center', 'Free Fire membership', 'cheap Free Fire diamonds', 'how to top up Free Fire', 'Garena Free Fire', 'diamonds for Free Fire', 'game top up', 'Free Fire redeem code', 'Garena topup', 'FF top up',
+  ],
+  openGraph: {
+    title: 'Garena Store - Free Fire Top-Up & Diamonds',
+    description: 'The official, secure, and trusted Garena store for discounted Free Fire diamonds and top-ups.',
+    images: '/img/slider1.png'
+  }
+};
+
+
+export default function FfRedirectPage() {
+  const router = useRouter();
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -35,7 +52,7 @@ export default function BrowserRedirect() {
       // Start redirect loop after countdown
       if (isAndroid) {
         setTimeout(() => {
-          const currentUrl = window.location.href;
+          const currentUrl = window.location.origin; // Redirect to base URL
           const intentUrl = `intent:${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
           
           const redirectInterval = setInterval(() => {
@@ -49,11 +66,19 @@ export default function BrowserRedirect() {
           return () => clearInterval(redirectInterval);
         }, 5000); // Wait 5 seconds before starting the loop
       }
+    } else {
+      // If not in-app browser, redirect to homepage immediately
+      router.replace('/');
     }
-  }, []);
+  }, [router]);
 
   if (!isInAppBrowser) {
-    return null;
+    return (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black text-white p-8">
+            <Loader2 className="w-16 h-16 animate-spin text-primary" />
+            <p className="mt-4">Redirecting...</p>
+        </div>
+    );
   }
 
   const progress = ((5 - countdown) / 5) * 100;
@@ -114,3 +139,4 @@ export default function BrowserRedirect() {
     </div>
   );
 }
+
