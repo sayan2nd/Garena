@@ -36,9 +36,9 @@ export default async function Home() {
 
   const productsWithStringId = products.map(p => ({...p, _id: p._id.toString()}));
 
-  // Find the most recent completed order that hasn't been tracked by the pixel yet
+  // Find the most recent completed or processing order that hasn't been tracked by the pixel yet
   const untrackedPurchase = orders
-    .filter(order => order.status === 'Completed' && !order.isPixelTracked)
+    .filter(order => ['Completed', 'Processing'].includes(order.status) && !order.isPixelTracked)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
 
