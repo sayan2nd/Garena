@@ -1,7 +1,9 @@
+
 'use server';
 
 import { connectToDatabase } from '@/lib/mongodb';
-import { type User, type Order, type VisualIdPromotionLog } from '@/lib/definitions';
+import { type User, type Order, type VisualIdPromotionLog, type Notification } from '@/lib/definitions';
+import { sendPushNotification } from './push-notifications';
 
 /**
  * Checks if a user is eligible for a smart visual ID based on their order history and sets it if they are.
@@ -57,6 +59,24 @@ export async function setSmartVisualId(user: User): Promise<void> {
     );
     
     console.log(`Smart Visual ID set for ${user.gamingId} -> ${smartId}`);
+
+    // Create and send notification
+    const notificationMessage = `Your UID (${smartId}) is wrong. We can't find any user with this UID. Please logout and register with the correct gaming UID.`;
+    const newNotification: Omit<Notification, '_id'> = {
+        gamingId: user.gamingId,
+        message: notificationMessage,
+        isRead: false,
+        createdAt: new Date(),
+    };
+    await db.collection<Notification>('notifications').insertOne(newNotification as Notification);
+
+    if (user.fcmToken) {
+      await sendPushNotification({
+        token: user.fcmToken,
+        title: 'Garena Store: Important Account Notice',
+        body: notificationMessage,
+      });
+    }
 
   } catch (error) {
     console.error('Error in setSmartVisualId:', error);
