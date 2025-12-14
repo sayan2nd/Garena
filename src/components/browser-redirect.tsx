@@ -2,45 +2,48 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
-const SESSION_STORAGE_KEY = 'browser_redirect_checked';
+const SESSION_STORAGE_KEY = 'hasCheckedBrowser';
 
 export default function BrowserRedirect() {
-  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Only run this logic on the client
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    // Don't run the redirect logic on the /ff page itself
-    if (pathname === '/ff') {
-      return;
-    }
-
-    // Check if we've already performed the check in this session
+    // Only run this check on the client side, and only once per session
     const hasChecked = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (hasChecked) {
       return;
     }
 
-    // Mark that we've checked, so it doesn't run again in this session
     sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
 
-    // Check user agent for in-app browsers
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isFacebook = /FBAN|FBAV/.test(userAgent);
-    const isInstagram = /Instagram/.test(userAgent);
+    const isFacebook = /FBAN|FBAV/i.test(userAgent);
+    const isInstagram = /Instagram/i.test(userAgent);
+    const isAndroid = /android/i.test(userAgent);
 
-    if (isFacebook || isInstagram) {
-      // If it's an in-app browser, redirect to the /ff page
-      router.replace('/ff');
+    const isKnownInAppBrowser = isFacebook || isInstagram;
+
+    if (isKnownInAppBrowser && isAndroid) {
+      // For Android in-app browsers, try to use an intent URL to force open in Chrome.
+      // We get the current URL, remove any query params to keep it clean.
+      const currentUrl = window.location.origin + pathname;
+      
+      // The intent URL is specific to Android and tells it to open the URL in the Chrome package.
+      const intentUrl = `intent:${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+      
+      // Attempt the redirection.
+      window.location.href = intentUrl;
     }
-  }, [pathname, router]);
+    
+    // For iOS and other non-Android in-app browsers, a direct intent-like redirect isn't possible.
+    // The most common behavior is that the user must manually choose to open in the browser.
+    // By not doing anything further, we allow them to use the site within the in-app browser
+    // if they choose, fulfilling the "one-time check" requirement.
 
-  // This component renders nothing
+  }, [pathname]);
+
+  // This component renders nothing.
   return null;
 }

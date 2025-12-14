@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, ShoppingCart, LogOut, Home } from 'lucide-react';
+import { Menu, ShoppingCart, LogOut, Home, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -114,6 +114,11 @@ export default function Header({ user, notifications, notificationKey, onNotific
                     notificationKey={notificationKey}
                     onNotificationRefresh={onNotificationRefresh}
                   />
+                   <a href="https://github.com/dhdgs23/Garena-Store/releases/download/v1.0/base.apk" download>
+                    <Button variant="outline" className="w-full">
+                        <Download className="mr-2" /> Download App
+                    </Button>
+                  </a>
                   {user && (
                     <Button variant="outline" onClick={async () => {
                       await handleLogout();
