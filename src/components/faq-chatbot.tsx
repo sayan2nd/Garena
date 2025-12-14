@@ -233,7 +233,7 @@ export default function FaqChatbot() {
                         }`}
                     >
                         <div
-                        className={`max-w-xs lg:max-w-md rounded-xl p-3 text-sm ${
+                        className={`max-w-xs lg:max-w-md rounded-xl p-3 text-sm font-sans ${
                             message.role === 'user'
                             ? 'bg-primary text-primary-foreground rounded-br-none'
                             : 'bg-muted rounded-bl-none'
