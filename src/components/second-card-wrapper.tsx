@@ -10,7 +10,7 @@ interface SecondCardWrapperProps {
 
 export default function SecondCardWrapper({ children, index }: SecondCardWrapperProps) {
   // Card numbers 26, 27, 28, 29, 30, 31 correspond to 0-based indices 25, 26, 27, 28, 29, 30
-  const targetIndices = [19, 20, 21, 22, 23, 24];
+  const targetIndices = [500];
 
   if (targetIndices.includes(index)) {
     return (
